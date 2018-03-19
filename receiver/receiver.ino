@@ -3,7 +3,8 @@
 #include "RF24.h"
 #include "VescUart.h"
 
-struct vescValues {
+struct vescValues
+{
   float ampHours;
   float inpVoltage;
   long rpm;
@@ -25,8 +26,9 @@ struct bldcMeasure measuredValues;
 struct vescValues data;
 unsigned long lastDataCheck;
 
-void setup() {
-  SERIALIO.begin(115200);
+void setup()
+{
+  Serial.begin(115200);
 
   radio.begin();
   radio.enableAckPayload();
@@ -38,7 +40,8 @@ void setup() {
   analogWrite(speedPin, motorSpeed);
 }
 
-void loop() {
+void loop()
+{
 
   getVescData();
 
@@ -71,19 +74,23 @@ void loop() {
   }
 }
 
-void getVescData() {
-
-  if (millis() - lastDataCheck >= 250) {
+void getVescData()
+{
+  if (millis() - lastDataCheck >= 250)
+  {
 
     lastDataCheck = millis();
 
     // Only transmit what we need
-    if (VescUartGetValue(measuredValues)) {
+    if (VescUartGetValue(measuredValues))
+    {
       data.ampHours = measuredValues.ampHours;
       data.inpVoltage = measuredValues.inpVoltage;
       data.rpm = measuredValues.rpm;
       data.tachometerAbs = measuredValues.tachometerAbs;
-    } else {
+    }
+    else
+    {
       data.ampHours = 0.0;
       data.inpVoltage = 0.0;
       data.rpm = 0;
