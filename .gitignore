@@ -1,0 +1,6 @@
+.vs
+__vm
+receiver/Debug
+receiver/Release
+transmitter/Debug
+transmitter/Release
