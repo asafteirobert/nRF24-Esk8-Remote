@@ -15,8 +15,10 @@
 #endif
 
 // Defining the type of display used (128x32)
-U8G2_SSD1306_128X32_UNIVISION_1_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
+//TODO: we seem to be just out of memory when using full pages. Try to use constexprs to save memory.
+U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
+/*
 static unsigned char logo_bits[] =
 {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x80, 0x3c, 0x01,
@@ -26,6 +28,7 @@ static unsigned char logo_bits[] =
   0x98, 0x99, 0x19, 0x30, 0x18, 0x0c, 0x70, 0x18, 0x0e, 0xe0, 0x00, 0x07,
   0x80, 0x3c, 0x01, 0x00, 0x7e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
+*/
 
 static unsigned char signal_transmitting_bits[] =
 {
@@ -45,27 +48,19 @@ static unsigned char signal_noconnection_bits[] =
   0x00, 0x09, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-// Defining struct to hold UART data.
-struct vescValues
+//Telemetry data returned from the receiver
+struct returnDataType
 {
-  float ampHours;
-  float inpVoltage;
-  long rpm;
-  long tachometerAbs;
+  float sensorVoltage = 0;
 };
 
-// Defining struct to hold stats 
-struct stats
-{
-  float maxSpeed;
-  long maxRpm;
-  float minVoltage;
-  float maxVoltage;
-};
 
+//change to rewrite settings
+const long settingsVersionCheck = 149778287;
 // Defining struct to hold setting values while remote is turned on.
 struct settings
 {
+  long settingsVersion = settingsVersionCheck;
   byte triggerMode;
   byte batteryType;
   byte batteryCells;
@@ -111,24 +106,25 @@ int settingRules[numOfSettings][3]{
   {40, 0, 250},
   {83, 0, 250},
   {1, 0, 1}, // Yes or no
-  {0, 0, 1023},
+  {150, 0, 1023},
   {512, 0, 1023},
-  {1023, 0, 1023}
+  {874, 0, 1023}
 };
 
-struct vescValues data;
+struct returnDataType returnData;
 struct settings remoteSettings;
 
 // Pin defination
 const byte triggerPin = 4;
-const int chargeMeasurePin = A1;
+//const int chargeMeasurePin = A1;
 const int batteryMeasurePin = A2;
 const int hallSensorPin = A3;
 
 // Battery monitering
-const float minVoltage = 3.2;
-const float maxVoltage = 4.1;
-const float refVoltage = 5.0; // Set to 4.5V if you are testing connected to USB, otherwise 5V (or the supply voltage)
+const float minVoltage = 3.4;
+const float maxVoltage = 4.2;
+const float refVoltage = 1.089;
+const float voltageDivider = 5.7;
 
 // Defining variables for Hall Effect throttle.
 short hallMeasurement, throttle;
@@ -143,7 +139,7 @@ unsigned long lastTransmission;
 // Defining variables for OLED display
 char displayBuffer[20];
 String displayString;
-short displayData = 0;
+short displayedPage = 0;
 unsigned long lastSignalBlink;
 unsigned long lastDataRotation;
 
@@ -186,6 +182,7 @@ void setup()
   // Start radio communication
   radio.begin();
   radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate(RF24_250KBPS);
   radio.enableAckPayload();
   radio.enableDynamicPayloads();
   radio.openWritingPipe(pipe);
@@ -198,7 +195,6 @@ void setup()
 
 void loop()
 {
-
   calculateThrottlePosition();
 
   if (changeSettings == true)
@@ -219,7 +215,7 @@ void loop()
       throttle = 127;
     }
     // Transmit to receiver
-    transmitToVesc();
+    transmitThrottle();
   }
 
   // Call function to update display and LED
@@ -357,30 +353,31 @@ void loadEEPROMSettings()
   // Load settings from EEPROM to custom struct
   EEPROM.get(0, remoteSettings);
 
-  bool rewriteSettings = false;
-
-  // Loop through all settings to check if everything is fine
-  for (int i = 0; i < numOfSettings; i++)
-  {
-    int val = getSettingValue(i);
-
-    if (!inRange(val, settingRules[i][1], settingRules[i][2]))
-    {
-      // Setting is damaged or never written. Rewrite default.
-      rewriteSettings = true;
-      setSettingValue(i, settingRules[i][0]);
-    }
-  }
-
-  if (rewriteSettings == true)
-  {
-    updateEEPROMSettings();
-  }
+  if (remoteSettings.settingsVersion != settingsVersionCheck)
+    setDefaultEEPROMSettings();
   else
   {
-    // Calculate constants
-    calculateRatios();
+    bool rewriteSettings = false;
+
+    // Loop through all settings to check if everything is fine
+    for (int i = 0; i < numOfSettings; i++)
+    {
+      int val = getSettingValue(i);
+
+      if (!inRange(val, settingRules[i][1], settingRules[i][2]))
+      {
+        // Setting is damaged or never written. Rewrite default.
+        rewriteSettings = true;
+        setSettingValue(i, settingRules[i][0]);
+      }
+    }
+
+    if (rewriteSettings == true)
+      updateEEPROMSettings();
   }
+
+  // Calculate constants
+  calculateRatios();
 }
 
 // Write settings to the EEPROM then exiting settings menu.
@@ -456,12 +453,11 @@ boolean triggerActive()
 }
 
 // Function used to transmit the throttle value, and receive the VESC realtime data.
-void transmitToVesc()
+void transmitThrottle()
 {
-  // Transmit once every 50 millisecond
-  if (millis() - lastTransmission >= 50)
+  // Transmit once every 19 millisecond
+  if (millis() - lastTransmission >= 19)
   {
-
     lastTransmission = millis();
 
     boolean sendSuccess = false;
@@ -471,7 +467,7 @@ void transmitToVesc()
     // Listen for an acknowledgement reponse (return of VESC data).
     while (radio.isAckPayloadAvailable())
     {
-      radio.read(&data, sizeof(data));
+      radio.read(&returnData, sizeof(returnData));
     }
 
     if (sendSuccess == true)
@@ -549,29 +545,29 @@ int batteryLevel()
   }
 }
 
-// Function to calculate and return the remotes battery voltage.
+// Function to calculate and return the remote's battery voltage.
 float batteryVoltage()
 {
-  float batteryVoltage = 0.0;
+  analogReference(INTERNAL);
+  analogRead(batteryMeasurePin);
+  delay(5);
+  analogRead(batteryMeasurePin);
+
   int total = 0;
-
   for (int i = 0; i < 10; i++)
-  {
     total += analogRead(batteryMeasurePin);
-  }
 
-  batteryVoltage = (refVoltage / 1024.0) * ((float)total / 10.0);
+  analogReference(DEFAULT);
+  analogRead(hallSensorPin);
+  delay(1);
 
-  return batteryVoltage;
+  return (refVoltage / 1024.0) * ((float)total / 10.0) * voltageDivider;
 }
 
 void updateMainDisplay()
 {
-
-  u8g2.firstPage();
-  do
+  u8g2.clearBuffer();
   {
-
     if (changeSettings == true)
     {
       drawSettingsMenu();
@@ -584,34 +580,34 @@ void updateMainDisplay()
       drawBatteryLevel();
       drawSignal();
     }
-
-  } while (u8g2.nextPage());
+  }
+  u8g2.sendBuffer();
 }
 
 void drawStartScreen()
 {
-  u8g2.firstPage();
-  do
+  u8g2.clearBuffer();
   {
-    u8g2.drawXBM(4, 4, 24, 24, logo_bits);
+    //u8g2.drawXBM(4, 4, 24, 24, logo_bits);
 
     displayString = "Esk8 remote";
     displayString.toCharArray(displayBuffer, 12);
     u8g2.setFont(u8g2_font_helvR10_tr);
     u8g2.drawStr(34, 22, displayBuffer);
-  } while (u8g2.nextPage());
+  }
+  u8g2.sendBuffer();
   delay(1500);
 }
 
 void drawTitleScreen(String title)
 {
-  u8g2.firstPage();
-  do
+  u8g2.clearBuffer();
   {
     title.toCharArray(displayBuffer, 20);
     u8g2.setFont(u8g2_font_helvR10_tr);
     u8g2.drawStr(12, 20, displayBuffer);
-  } while (u8g2.nextPage());
+  }
+  u8g2.sendBuffer();
   delay(1500);
 }
 
@@ -628,34 +624,23 @@ void drawPage()
   int y = 16;
 
   // Rotate the realtime data each 4s.
+  /*
   if ((millis() - lastDataRotation) >= 4000)
   {
-
     lastDataRotation = millis();
-    displayData++;
+    displayedPage++;
 
-    if (displayData > 2)
+    if (displayedPage > 2)
     {
-      displayData = 0;
+      displayedPage = 0;
     }
   }
+  */
 
-  switch (displayData)
+  switch (displayedPage)
   {
   case 0:
-    value = ratioRpmSpeed * data.rpm;
-    suffix = "KMH";
-    prefix = "SPEED";
-    decimals = 1;
-    break;
-  case 1:
-    value = ratioPulseDistance * data.tachometerAbs;
-    suffix = "KM";
-    prefix = "DISTANCE";
-    decimals = 2;
-    break;
-  case 2:
-    value = data.inpVoltage;
+    value = returnData.sensorVoltage;
     suffix = "V";
     prefix = "BATTERY";
     decimals = 1;

@@ -1,100 +1,94 @@
 #include <SPI.h>
 #include <nRF24L01.h>
+#include <Servo.h>
 #include "RF24.h"
-#include "VescUart.h"
+//#include "VescUart.h"
 
-struct vescValues
+struct returnDataType
 {
-  float ampHours;
-  float inpVoltage;
-  long rpm;
-  long tachometerAbs;
+  float sensorVoltage = 0;
 };
 
-RF24 radio(9, 10);
 const uint64_t pipe = 0xE8E8F0F0E1LL;
+const int timeoutMax = 500;
+const int outputPin1 = 5;
+const int outputPin2 = 6;
+const int voltageSensorPin = A1;
+const float voltageSensorReference = 1.089; //Slightly lower than the expected 1v1 
+const float voltageSensorMultiplier = 48; //Voltage divider R1=47k, R2=1K
+
+RF24 radio(9, 10);
+Servo servoOutput1;
+Servo servoOutput2;
 
 bool recievedData = false;
 uint32_t lastTimeReceived = 0;
+int outputValue = 127;
+//unsigned long lastDataCheck;
 
-int motorSpeed = 127;
-int timeoutMax = 500;
-int speedPin = 5;
 
-struct bldcMeasure measuredValues;
+//struct bldcMeasure measuredValues;
+struct returnDataType returnData;
 
-struct vescValues data;
-unsigned long lastDataCheck;
 
 void setup()
 {
-  Serial.begin(115200);
+  //Serial.begin(115200);
 
   radio.begin();
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate(RF24_250KBPS);
   radio.enableAckPayload();
   radio.enableDynamicPayloads();
   radio.openReadingPipe(1, pipe);
   radio.startListening();
 
-  pinMode(speedPin, OUTPUT);
-  analogWrite(speedPin, motorSpeed);
+  servoOutput1.attach(outputPin1);
+  servoOutput2.attach(outputPin2);
+
+  pinMode(voltageSensorPin, INPUT);
+  analogReference(INTERNAL);
+  analogRead(voltageSensorPin);
+
 }
 
 void loop()
 {
 
-  getVescData();
+  returnData.sensorVoltage = readSensorVoltage();
 
   // If transmission is available
   if (radio.available())
   {
-    // The next time a transmission is received on pipe, the data in gotByte will be sent back in the acknowledgement (this could later be changed to data from VESC!)
-    radio.writeAckPayload(pipe, &data, sizeof(data));
+    // Send back telemetry
+    radio.writeAckPayload(pipe, &returnData, sizeof(returnData));
 
     // Read the actual message
-    radio.read(&motorSpeed, sizeof(motorSpeed));
+    radio.read(&outputValue, sizeof(outputValue));
     recievedData = true;
   }
 
   if (recievedData == true)
   {
     // A speed is received from the transmitter (remote).
-
     lastTimeReceived = millis();
     recievedData = false;
-
-    // Write the PWM signal to the ESC (0-255).
-    analogWrite(speedPin, motorSpeed);
   }
   else if ((millis() - lastTimeReceived) > timeoutMax)
   {
     // No speed is received within the timeout limit.
-    motorSpeed = 127;
-    analogWrite(speedPin, motorSpeed);
+    outputValue = 127;
   }
+
+  short pulseWidth = map(outputValue, 0, 255, 1000, 2000);
+  servoOutput1.writeMicroseconds(pulseWidth);
+  servoOutput2.writeMicroseconds(pulseWidth);
 }
 
-void getVescData()
+float readSensorVoltage()
 {
-  if (millis() - lastDataCheck >= 250)
-  {
-
-    lastDataCheck = millis();
-
-    // Only transmit what we need
-    if (VescUartGetValue(measuredValues))
-    {
-      data.ampHours = measuredValues.ampHours;
-      data.inpVoltage = measuredValues.inpVoltage;
-      data.rpm = measuredValues.rpm;
-      data.tachometerAbs = measuredValues.tachometerAbs;
-    }
-    else
-    {
-      data.ampHours = 0.0;
-      data.inpVoltage = 0.0;
-      data.rpm = 0;
-      data.tachometerAbs = 0;
-    }
-  }
+  int total = 0;
+  for (int i = 0; i < 10; i++)
+    total += analogRead(voltageSensorPin);
+  return (voltageSensorReference / 1024.0) * ((float)total / 10.0) * voltageSensorMultiplier;
 }
