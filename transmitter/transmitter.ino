@@ -50,7 +50,6 @@ RF24 radio(PIN_NRF_CE, PIN_NRF_CS);
 
 // Defining variables for Settings menu
 bool changeSettings = false;
-bool changeSelectedSetting = false;
 
 bool settingsLoopFlag = false;
 bool settingsChangeFlag = false;
@@ -63,8 +62,12 @@ void setup()
 #endif
 
   remoteSettings.loadFromEEPROM();
+  if (remoteSettings.rotateDisplay)
+    u8g2.setDisplayRotation(U8G2_R2);
 
   pinMode(PIN_TRIGGER, INPUT_PULLUP);
+  pinMode(PIN_PAGE_SWITCH, INPUT_PULLUP);
+  pinMode(PIN_CRUISE_CONTROL, INPUT_PULLUP);
   pinMode(PIN_HALL_SENSOR, INPUT);
   pinMode(PIN_BATTERY_MEASURE, INPUT);
 
@@ -72,7 +75,7 @@ void setup()
 
   drawStartScreen();
 
-  if (triggerActive())
+  if (isTriggerButtonActive())
   {
     changeSettings = true;
     drawTitleScreen(F("Remote Settings"));
@@ -103,7 +106,7 @@ void loop()
   }
   else
   {
-    if (!triggerActive() && throttle>127)
+    if (!isTriggerButtonActive() && throttle>127)
       throttle = 127;
 
     // Transmit to receiver
@@ -116,18 +119,14 @@ void loop()
 
 void controlSettingsMenu()
 {
-  if (triggerActive())
+  if (isPageSwitchButtonActive())
   {
     if (settingsChangeFlag == false)
     {
-
-      // Save settings to EEPROM
-      if (changeSelectedSetting == true)
-      {
-        remoteSettings.saveToEEPROM();
-      }
-
-      changeSelectedSetting = !changeSelectedSetting;
+      remoteSettings.saveToEEPROM();
+      currentSetting++;
+      if (currentSetting >= SETTINGS_COUNT)
+        currentSetting = 0;
       settingsChangeFlag = true;
     }
   }
@@ -139,48 +138,28 @@ void controlSettingsMenu()
   if (hallMeasurement >= (remoteSettings.maxHallValue - 150) && settingsLoopFlag == false)
   {
     // Up
-    if (changeSelectedSetting == true)
-    {
-      int val = remoteSettings.getSettingValue(currentSetting) + 1;
-
-      if (remoteSettings.inRange(val, currentSetting))
-      {
-        remoteSettings.setSettingValue(currentSetting, val);
-        settingsLoopFlag = true;
-      }
-    }
-    else
-    {
-      if (currentSetting != 0)
-      {
-        currentSetting--;
-        settingsLoopFlag = true;
-      }
-    }
+    remoteSettings.increaseSetting(currentSetting);
+    settingsLoopFlag = true;
   }
   else if (hallMeasurement <= (remoteSettings.minHallValue + 150) && settingsLoopFlag == false)
   {
     // Down
-    if (changeSelectedSetting == true)
-    {
-      int val = remoteSettings.getSettingValue(currentSetting) - 1;
-
-      if (remoteSettings.inRange(val, currentSetting))
-      {
-        remoteSettings.setSettingValue(currentSetting, val);
-        settingsLoopFlag = true;
-      }
-    }
-    else
-    {
-      if (currentSetting < (SETTINGS_COUNT - 1))
-      {
-        currentSetting++;
-        settingsLoopFlag = true;
-      }
-    }
+    remoteSettings.decreaseSetting(currentSetting);
+    settingsLoopFlag = true;
   }
-  
+  else if (isCruiseControlButtonActive())
+  {
+    if (remoteSettings.isThrottleHallSetting(currentSetting))
+      remoteSettings.setSettingValue(currentSetting, hallMeasurement);
+    if (currentSetting == SETTINGS_COUNT - 1 && settingsLoopFlag == false)
+    {
+      remoteSettings.resetToDefault();
+      remoteSettings.saveToEEPROM();
+      currentSetting = 0;
+    }
+
+    settingsLoopFlag = true;
+  }
   else if ((remoteSettings.centerHallValue - 50 <= hallMeasurement) && (hallMeasurement <= remoteSettings.centerHallValue + 50))
   {
     settingsLoopFlag = false;
@@ -193,14 +172,20 @@ void drawSettingNumber()
   int x = 2; int y = 10;
 
   // Draw current setting number box
-  u8g2.drawRFrame(x + 102, y - 10, 22, 32, 4);
+  if (currentSetting < 9)
+    u8g2.drawRFrame(x + 102, y - 10, 22, 32, 4);
+  else
+    u8g2.drawRFrame(x + 92, y - 10, 32, 32, 4);
 
   // Draw current setting number
   String displayString = (String)(currentSetting + 1);
   displayString.toCharArray(displayBuffer, displayString.length() + 1);
 
   u8g2.setFont(u8g2_font_profont22_tn);
-  u8g2.drawStr(x + 108, 22, displayBuffer);
+  if (currentSetting < 9)
+    u8g2.drawStr(x + 108, 22, displayBuffer);
+  else
+    u8g2.drawStr(x + 98, 22, displayBuffer);
 }
 
 void drawSettingsMenu()
@@ -209,32 +194,32 @@ void drawSettingsMenu()
   int x = 0; int y = 10;
 
   // Draw setting title
-  String displayString = SETTINGS_NAMES[currentSetting][0];
+  String displayString = remoteSettings.getSettingString(currentSetting);
   displayString.toCharArray(displayBuffer, displayString.length() + 1);
 
   u8g2.setFont(u8g2_font_profont12_tr);
   u8g2.drawStr(x, y, displayBuffer);
 
-  int val = remoteSettings.getSettingValue(currentSetting);
-
-  displayString = (String)val + "" + SETTINGS_NAMES[currentSetting][1];
+  displayString = remoteSettings.getSettingValueString(currentSetting) + remoteSettings.getSettingStringUnit(currentSetting);
   displayString.toCharArray(displayBuffer, displayString.length() + 1);
   u8g2.setFont(u8g2_font_10x20_tr);
 
-  if (changeSelectedSetting == true)
-  {
-    u8g2.drawStr(x + 10, y + 20, displayBuffer);
-  }
-  else
-  {
-    u8g2.drawStr(x, y + 20, displayBuffer);
-  }
+  u8g2.drawStr(x, y + 20, displayBuffer);
 }
 
-// Return true if trigger is activated, false otherwice
-boolean triggerActive()
+bool isTriggerButtonActive()
 {
-    return digitalRead(PIN_TRIGGER) == LOW;
+  return digitalRead(PIN_TRIGGER) == LOW;
+}
+
+bool isPageSwitchButtonActive()
+{
+  return digitalRead(PIN_PAGE_SWITCH) == LOW;
+}
+
+bool isCruiseControlButtonActive()
+{
+  return digitalRead(PIN_CRUISE_CONTROL) == LOW;
 }
 
 // Function used to transmit the throttle value, and receive the telemetry data.
@@ -297,7 +282,7 @@ void calculateThrottlePosition()
     throttle = constrain(map(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 127), 0, 127);
 
   // removeing center noise
-  if (abs(throttle - 127) < THROTTLE_DEADZONE)
+  if (abs(throttle - 127) < remoteSettings.throttleDeadzone)
     throttle = 127;
 }
 
@@ -485,7 +470,7 @@ void drawSignal()
 
   if (connected == true)
   {
-    if (triggerActive())
+    if (isTriggerButtonActive())
       u8g2.drawXBMP(x, y, 12, 12, ICON_SIGNAL_TRANSMITTING);
     else
       u8g2.drawXBMP(x, y, 12, 12, ICON_SIGNAL_CONNECTED);

@@ -41,6 +41,7 @@ void RemoteSettings::loadFromEEPROM()
 // Write settings to the EEPROM then exiting settings menu.
 void RemoteSettings::saveToEEPROM()
 {
+  this->settingsVersion = SETTINGS_VERSION_CHECK;
   EEPROM.put(0, *this);
 }
 
@@ -49,17 +50,19 @@ int RemoteSettings::getSettingValue(int index)
   int value;
   switch (index)
   {
-  case 0: value = this->triggerMode;     break;
-  case 1: value = this->batteryType;     break;
-  case 2: value = this->batteryCells;    break;
-  case 3: value = this->motorPoles;      break;
-  case 4: value = this->motorPulley;     break;
-  case 5: value = this->wheelPulley;     break;
-  case 6: value = this->wheelDiameter;   break;
-  case 7: value = this->useUart;         break;
-  case 8: value = this->minHallValue;    break;
-  case 9: value = this->centerHallValue; break;
-  case 10: value = this->maxHallValue;   break;
+  case 0: value = this->rotateDisplay;               break;
+  case 1: value = this->barShowsInput;               break;
+  case 2: value = this->batteryType;                 break;
+  case 3: value = this->batteryCells;                break;
+  case 4: value = this->throttleDeadzone;            break;
+  case 5: value = this->minHallValue;                break;
+  case 6: value = this->centerHallValue;             break;
+  case 7: value = this->maxHallValue;                break;
+  case 8: value = this->breakEndpoint;               break;
+  case 9: value = this->throttleEndpoint;            break;
+  case 10: value = this->breakAccelerationTime;      break;
+  case 11: value = this->throttleAccelerationTime;   break;
+  case 12: value = this->cruiseAccelerationTime;     break;
   }
   return value;
 }
@@ -68,20 +71,226 @@ void RemoteSettings::setSettingValue(int index, int value)
 {
   switch (index)
   {
-  case 0: this->triggerMode = value;     break;
-  case 1: this->batteryType = value;     break;
-  case 2: this->batteryCells = value;    break;
-  case 3: this->motorPoles = value;      break;
-  case 4: this->motorPulley = value;     break;
-  case 5: this->wheelPulley = value;     break;
-  case 6: this->wheelDiameter = value;   break;
-  case 7: this->useUart = value;         break;
-  case 8: this->minHallValue = value;    break;
-  case 9: this->centerHallValue = value; break;
-  case 10: this->maxHallValue = value;   break;
+  case 0: this->rotateDisplay = value;               break;
+  case 1: this->barShowsInput = value;               break;
+  case 2: this->batteryType = value;                 break;
+  case 3: this->batteryCells = value;                break;
+  case 4: this->throttleDeadzone = value;            break;
+  case 5: this->minHallValue = value;                break;
+  case 6: this->centerHallValue = value;             break;
+  case 7: this->maxHallValue = value;                break;
+  case 8: this->breakEndpoint = value;               break;
+  case 9: this->throttleEndpoint = value;            break;
+  case 10: this->breakAccelerationTime = value;      break;
+  case 11: this->throttleAccelerationTime = value;   break;
+  case 12: this->cruiseAccelerationTime = value;     break;
   }
 }
 
+void RemoteSettings::increaseSetting(int index)
+{
+  switch (index)
+  {
+  case 0:
+    this->rotateDisplay = !this->rotateDisplay;
+    break;
+  case 1:
+    this->barShowsInput = !this->barShowsInput;
+    break;
+  case 2:
+  case 3:
+  case 4:
+  {
+    int val = this->getSettingValue(index) + 1;
+    if (this->inRange(val, index))
+      this->setSettingValue(index, val);
+    break;
+  }
+  case 5:
+  case 6:
+  case 7:
+  {
+    int val = this->getSettingValue(index) + 10;
+    if (this->inRange(val, index))
+      this->setSettingValue(index, val);
+    break;
+  }
+
+  case 8:
+  case 9:
+  {
+    int val = this->getSettingValue(index) + 1;
+    if (this->inRange(val, index))
+      this->setSettingValue(index, val);
+    break;
+  }
+
+  case 10:
+  {
+    float val = this->breakAccelerationTime + 0.1;
+    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
+      this->breakAccelerationTime = val;
+    break;
+  }
+  case 11:
+  {
+    float val = this->throttleAccelerationTime + 0.1;
+    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
+      this->throttleAccelerationTime = val;
+    break;
+  }
+  case 12:
+  {
+    float val = this->cruiseAccelerationTime + 0.1;
+    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
+      this->cruiseAccelerationTime = val;
+    break;
+  }
+  }
+}
+
+String RemoteSettings::getSettingString(int index)
+{
+  switch (index)
+  {
+  case 0: return String(F("Rotate Display"));
+  case 1: return String(F("Bar shows input"));
+  case 2: return String(F("Battery type"));
+  case 3: return String(F("Battery cells"));
+  case 4: return String(F("Throttle deadzone"));
+  case 5: return String(F("Throttle min"));
+  case 6: return String(F("Throttle center"));
+  case 7: return String(F("Throttle max"));
+  case 8: return String(F("Break endpoint"));
+  case 9: return String(F("Thr. endpoint"));
+  case 10: return String(F("Break accel."));
+  case 11: return String(F("Throttle accel."));
+  case 12: return String(F("Cruise accel."));
+  case 13: return String(F("RESET ALL"));
+  }
+}
+
+String RemoteSettings::getSettingStringUnit(int index)
+{
+  switch (index)
+  {
+  case 0: return String();
+  case 1: return String();
+  case 2: return String();
+  case 3: return String(F("S"));
+  case 4: return String();
+  case 5: return String();
+  case 6: return String();
+  case 7: return String();
+  case 8: return String(F("%"));
+  case 9: return String(F("%"));
+  case 10: return String(F(" sec"));
+  case 11: return String(F(" sec"));
+  case 12: return String(F(" sec"));
+  case 13: return String();
+  }
+}
+
+
+String RemoteSettings::getSettingValueString(int index)
+{
+  switch (index)
+  {
+  case 0: return this->rotateDisplay ? String(F("True")) : String(F("False"));
+  case 1: return this->barShowsInput ? String(F("True")) : String(F("False"));
+  case 2: return this->batteryType ? String(F("LiIon")) : String(F("LiPo"));
+  case 3: return String(this->batteryCells);
+  case 4: return String(this->throttleDeadzone);
+  case 5: return String(this->minHallValue);
+  case 6: return String(this->centerHallValue);
+  case 7: return String(this->maxHallValue);
+  case 8: return String(this->breakEndpoint);
+  case 9: return String(this->throttleEndpoint);
+  case 10: return String(this->breakAccelerationTime);
+  case 11: return String(this->throttleAccelerationTime);
+  case 12: return String(this->cruiseAccelerationTime);
+  case 13: return String(F("Confirm"));
+  }
+  return String(F("Unknown"));
+}
+
+
+void RemoteSettings::decreaseSetting(int index)
+{
+  switch (index)
+  {
+  case 0:
+    this->rotateDisplay = !this->rotateDisplay;
+    break;
+  case 1:
+    this->barShowsInput = !this->barShowsInput;
+    break;
+  case 2:
+  case 3:
+  case 4:
+  {
+    int val = this->getSettingValue(index) - 1;
+    if (this->inRange(val, index))
+      this->setSettingValue(index, val);
+    break;
+  }
+  case 5:
+  case 6:
+  case 7:
+  {
+    int val = this->getSettingValue(index) - 10;
+    if (this->inRange(val, index))
+      this->setSettingValue(index, val);
+    break;
+  }
+
+  case 8:
+  case 9:
+  {
+    int val = this->getSettingValue(index) - 1;
+    if (this->inRange(val, index))
+      this->setSettingValue(index, val);
+    break;
+  }
+
+  case 10:
+  {
+    float val = this->breakAccelerationTime - 0.1;
+    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
+      this->breakAccelerationTime = val;
+    break;
+  }
+  case 11:
+  {
+    float val = this->throttleAccelerationTime - 0.1;
+    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
+      this->throttleAccelerationTime = val;
+    break;
+  }
+  case 12:
+  {
+    float val = this->cruiseAccelerationTime - 0.1;
+    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
+      this->cruiseAccelerationTime = val;
+    break;
+  }
+  }
+}
+
+bool RemoteSettings::isThrottleHallSetting(int index)
+{
+  switch (index)
+  {
+  case 5:
+  case 6:
+  case 7:
+    return true;
+  default:
+    return false;
+  }
+
+  return false;
+}
 
 bool RemoteSettings::inRange(int val, byte settingIndex)
 {

@@ -3,41 +3,32 @@
 #include "arduino.h"
 
 // ======= Settings =======
-const byte SETTINGS_COUNT = 11;
-const long SETTINGS_VERSION_CHECK = 149778288; //change to rewrite settings
-const String SETTINGS_NAMES[SETTINGS_COUNT][2] =
-{
-{ "Trigger",         "" },
-{ "Battery type",    "" },
-{ "Battery cells",   "S" },
-{ "Motor poles",     "" },
-{ "Motor pulley",    "T" },
-{ "Wheel pulley",    "T" },
-{ "Wheel diameter",  "mm" },
-{ "UART data",       "" },
-{ "Throttle min",    "" },
-{ "Throttle center", "" },
-{ "Throttle max",    "" }
-};
+const byte SETTINGS_COUNT = 14;
+const long SETTINGS_VERSION_CHECK = 149778290; //change to rewrite settings
 
 const int SETTINGS_RULES[SETTINGS_COUNT][3] =
 {
 // Setting rules format: default, min, max.
-{ 0, 0, 3 }, // 0 Killswitch, 1 cruise & 2 data toggle
+{ 0, 0, 1 },
+{ 1, 0, 1 },
 { 0, 0, 1 }, // 0 Li-ion & 1 LiPo
 { 10, 0, 12 },
-{ 14, 0, 250 },
-{ 15, 0, 250 },
-{ 40, 0, 250 },
-{ 83, 0, 250 },
-{ 1, 0, 1 }, // Yes or no
+{ 3, 0, 100 },
 { 150, 0, 1023 },
 { 512, 0, 1023 },
-{ 874, 0, 1023 }
+{ 874, 0, 1023 },
+{ 100, 0, 100 },
+{ 100, 0, 100 },
+{ 0, 0, 5 },
+{ 0, 0, 5 },
+{ 1, 0, 5 },
+{ 0, 0, 0 },
 };
 
 // ======= Pin defination =======
 const uint8_t PIN_TRIGGER = 4;
+const uint8_t PIN_PAGE_SWITCH = 5;
+const uint8_t PIN_CRUISE_CONTROL = 6;
 const uint8_t PIN_BATTERY_MEASURE = A2;
 const uint8_t PIN_HALL_SENSOR = A3;
 const uint8_t PIN_NRF_CE = 9;
@@ -50,10 +41,6 @@ const float REMOTE_BATTERY_MIN_VOLTAGE = 3.4;
 const float REMOTE_BATTERY_MAX_VOLTAGE = 4.2;
 const float REMOTE_BATTERY_SENSOR_REF_VOLTAGE = 1.089;
 const float REMOTE_BATTERY_SENSOR_MULTIPLIER = 5.7;
-
-//TODO: convert to setting
-const byte THROTTLE_DEADZONE = 4;
-
 
 // ======= Icons =======
 const static unsigned char ICON_LOGO[] PROGMEM =

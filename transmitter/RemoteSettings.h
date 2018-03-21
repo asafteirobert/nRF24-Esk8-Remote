@@ -16,6 +16,14 @@ public:
   int getSettingValue(int index);
   // Set a value of a specific setting by index.
   void setSettingValue(int index, int value);
+  void increaseSetting(int index);
+  String getSettingString(int index);
+  String getSettingStringUnit(int index);
+  String getSettingValueString(int index);
+  void decreaseSetting(int index);
+
+  bool isThrottleHallSetting(int index);
+
   // Check if a setting is within a min and max value
   bool inRange(int val, byte settingIndex);
 
@@ -23,19 +31,22 @@ public:
 public:
 
   // data to hold setting values
-  long settingsVersion = SETTINGS_VERSION_CHECK;
-  byte triggerMode;
+  long settingsVersion;
+  bool rotateDisplay;
+  bool barShowsInput;
   byte batteryType;
   byte batteryCells;
-  byte motorPoles;
-  byte motorPulley;
-  byte wheelPulley;
-  byte wheelDiameter;
-  bool useUart;
+  byte throttleDeadzone;
   int minHallValue;
   int centerHallValue;
   int maxHallValue;
+  byte breakEndpoint;
+  byte throttleEndpoint;
+  float breakAccelerationTime;
+  float throttleAccelerationTime;
+  float cruiseAccelerationTime;
+  //telemetry voltage multiplier
+  //remote voltage multiplier
 };
-
 #endif
 
