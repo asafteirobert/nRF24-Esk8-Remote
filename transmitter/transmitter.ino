@@ -15,11 +15,9 @@
 #endif
 
 // Defining the type of display used (128x32)
-//TODO: we seem to be just out of memory when using full pages. Try to use constexprs to save memory.
 U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
-/*
-static unsigned char logo_bits[] =
+const static unsigned char logo_bits[] PROGMEM =
 {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x80, 0x3c, 0x01,
   0xe0, 0x00, 0x07, 0x70, 0x18, 0x0e, 0x30, 0x18, 0x0c, 0x98, 0x99, 0x19,
@@ -28,21 +26,20 @@ static unsigned char logo_bits[] =
   0x98, 0x99, 0x19, 0x30, 0x18, 0x0c, 0x70, 0x18, 0x0e, 0xe0, 0x00, 0x07,
   0x80, 0x3c, 0x01, 0x00, 0x7e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
-*/
 
-static unsigned char signal_transmitting_bits[] =
+const static unsigned char signal_transmitting_bits[] PROGMEM =
 {
   0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x0f,
   0x33, 0x0f, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
 };
 
-static unsigned char signal_connected_bits[] =
+const static unsigned char signal_connected_bits[] PROGMEM =
 {
   0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x09,
   0x33, 0x09, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
 };
 
-static unsigned char signal_noconnection_bits[] =
+const static unsigned char signal_noconnection_bits[] PROGMEM =
 {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x09,
   0x00, 0x09, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -138,7 +135,6 @@ unsigned long lastTransmission;
 
 // Defining variables for OLED display
 char displayBuffer[20];
-String displayString;
 short displayedPage = 0;
 unsigned long lastSignalBlink;
 unsigned long lastDataRotation;
@@ -176,7 +172,7 @@ void setup()
   if (triggerActive())
   {
     changeSettings = true;
-    drawTitleScreen("Remote Settings");
+    drawTitleScreen(F("Remote Settings"));
   }
 
   // Start radio communication
@@ -303,7 +299,7 @@ void drawSettingNumber()
   u8g2.drawRFrame(x + 102, y - 10, 22, 32, 4);
 
   // Draw current setting number
-  displayString = (String)(currentSetting + 1);
+  String displayString = (String)(currentSetting + 1);
   displayString.toCharArray(displayBuffer, displayString.length() + 1);
 
   u8g2.setFont(u8g2_font_profont22_tn);
@@ -316,7 +312,7 @@ void drawSettingsMenu()
   int x = 0; int y = 10;
 
   // Draw setting title
-  displayString = settingPages[currentSetting][0];
+  String displayString = settingPages[currentSetting][0];
   displayString.toCharArray(displayBuffer, displayString.length() + 1);
 
   u8g2.setFont(u8g2_font_profont12_tr);
@@ -476,14 +472,14 @@ void transmitThrottle()
       failCount = 0;
       sendSuccess = false;
 
-      DEBUG_PRINT("Transmission succes");
+      DEBUG_PRINT(F("Transmission succes"));
     }
     else
     {
       // Transmission was not a succes
       failCount++;
 
-      DEBUG_PRINT("Failed transmission");
+      DEBUG_PRINT(F("Failed transmission"));
     }
 
     // If lost more than 5 transmissions, we can assume that connection is lost.
@@ -588,9 +584,9 @@ void drawStartScreen()
 {
   u8g2.clearBuffer();
   {
-    //u8g2.drawXBM(4, 4, 24, 24, logo_bits);
+    u8g2.drawXBMP(4, 4, 24, 24, logo_bits);
 
-    displayString = "Esk8 remote";
+    String displayString = F("Esk8 remote");
     displayString.toCharArray(displayBuffer, 12);
     u8g2.setFont(u8g2_font_helvR10_tr);
     u8g2.drawStr(34, 22, displayBuffer);
@@ -642,13 +638,13 @@ void drawPage()
   case 0:
     value = returnData.sensorVoltage;
     suffix = "V";
-    prefix = "BATTERY";
+    prefix = F("BATTERY");
     decimals = 1;
     break;
   }
 
   // Display prefix (title)
-  displayString = prefix;
+  String displayString = prefix;
   displayString.toCharArray(displayBuffer, 10);
   u8g2.setFont(u8g2_font_profont12_tr);
   u8g2.drawStr(x, y - 1, displayBuffer);
@@ -733,11 +729,11 @@ void drawSignal()
   {
     if (triggerActive())
     {
-      u8g2.drawXBM(x, y, 12, 12, signal_transmitting_bits);
+      u8g2.drawXBMP(x, y, 12, 12, signal_transmitting_bits);
     }
     else
     {
-      u8g2.drawXBM(x, y, 12, 12, signal_connected_bits);
+      u8g2.drawXBMP(x, y, 12, 12, signal_connected_bits);
     }
   }
   else
@@ -750,11 +746,11 @@ void drawSignal()
 
     if (signalBlink == true)
     {
-      u8g2.drawXBM(x, y, 12, 12, signal_connected_bits);
+      u8g2.drawXBMP(x, y, 12, 12, signal_connected_bits);
     }
     else
     {
-      u8g2.drawXBM(x, y, 12, 12, signal_noconnection_bits);
+      u8g2.drawXBMP(x, y, 12, 12, signal_noconnection_bits);
     }
   }
 }
