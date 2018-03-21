@@ -9,7 +9,7 @@ struct returnDataType
   float sensorVoltage = 0;
 };
 
-const uint64_t pipe = 0xE8E8F0F0E1LL;
+const uint64_t NRF_PIPE = 0xE8E8F0F0E1LL;
 const int timeoutMax = 500;
 const int outputPin1 = 5;
 const int outputPin2 = 6;
@@ -40,7 +40,7 @@ void setup()
   radio.setDataRate(RF24_250KBPS);
   radio.enableAckPayload();
   radio.enableDynamicPayloads();
-  radio.openReadingPipe(1, pipe);
+  radio.openReadingPipe(1, NRF_PIPE);
   radio.startListening();
 
   servoOutput1.attach(outputPin1);
@@ -61,7 +61,7 @@ void loop()
   if (radio.available())
   {
     // Send back telemetry
-    radio.writeAckPayload(pipe, &returnData, sizeof(returnData));
+    radio.writeAckPayload(NRF_PIPE, &returnData, sizeof(returnData));
 
     // Read the actual message
     radio.read(&outputValue, sizeof(outputValue));

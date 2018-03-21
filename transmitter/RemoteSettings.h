@@ -3,11 +3,8 @@
 #ifndef _REMOTESETTINGS_h
 #define _REMOTESETTINGS_h
 
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "arduino.h"
-#else
-  #include "WProgram.h"
-#endif
+#include "arduino.h"
+#include "Constants.h"
 
 class RemoteSettings
 {
@@ -23,20 +20,10 @@ public:
   bool inRange(int val, byte settingIndex);
 
 
-
-  const static byte numOfSettings = 11;
-  //change to rewrite settings
-  const static long settingsVersionCheck = 149778288;
-
-  const static String settingNames[numOfSettings][2];
-private:
-  const static int settingRules[numOfSettings][3];
-
-
 public:
 
   // data to hold setting values
-  long settingsVersion = settingsVersionCheck;
+  long settingsVersion = SETTINGS_VERSION_CHECK;
   byte triggerMode;
   byte batteryType;
   byte batteryCells;

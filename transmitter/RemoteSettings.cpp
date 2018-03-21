@@ -1,41 +1,11 @@
 #include "RemoteSettings.h"
+#include "Constants.h"
 #include <EEPROM.h>
-
-const String RemoteSettings::settingNames[numOfSettings][2] =
-{
-  { "Trigger",         "" },
-  { "Battery type",    "" },
-  { "Battery cells",   "S" },
-  { "Motor poles",     "" },
-  { "Motor pulley",    "T" },
-  { "Wheel pulley",    "T" },
-  { "Wheel diameter",  "mm" },
-  { "UART data",       "" },
-  { "Throttle min",    "" },
-  { "Throttle center", "" },
-  { "Throttle max",    "" }
-};
-
-// Setting rules format: default, min, max.
-const int RemoteSettings::settingRules[numOfSettings][3] =
-{
-    { 0, 0, 3 }, // 0 Killswitch, 1 cruise & 2 data toggle
-    { 0, 0, 1 }, // 0 Li-ion & 1 LiPo
-    { 10, 0, 12 },
-    { 14, 0, 250 },
-    { 15, 0, 250 },
-    { 40, 0, 250 },
-    { 83, 0, 250 },
-    { 1, 0, 1 }, // Yes or no
-    { 150, 0, 1023 },
-    { 512, 0, 1023 },
-    { 874, 0, 1023 }
-};
 
 void RemoteSettings::resetToDefault()
 {
-  for (int i = 0; i < numOfSettings; i++)
-    this->setSettingValue(i, settingRules[i][0]);
+  for (int i = 0; i < SETTINGS_COUNT; i++)
+    this->setSettingValue(i, SETTINGS_RULES[i][0]);
   this->saveToEEPROM();
 }
 
@@ -44,14 +14,14 @@ void RemoteSettings::loadFromEEPROM()
   // Load settings from EEPROM to this
   EEPROM.get(0, *this);
 
-  if (this->settingsVersion != this->settingsVersionCheck)
+  if (this->settingsVersion != SETTINGS_VERSION_CHECK)
     this->resetToDefault();
   else
   {
     bool rewriteSettings = false;
 
     // Loop through all settings to check if everything is fine
-    for (int i = 0; i < numOfSettings; i++)
+    for (int i = 0; i < SETTINGS_COUNT; i++)
     {
       int val = this->getSettingValue(i);
 
@@ -59,7 +29,7 @@ void RemoteSettings::loadFromEEPROM()
       {
         // Setting is damaged or never written. Rewrite default.
         rewriteSettings = true;
-        this->setSettingValue(i, settingRules[i][0]);
+        this->setSettingValue(i, SETTINGS_RULES[i][0]);
       }
     }
 
@@ -115,5 +85,5 @@ void RemoteSettings::setSettingValue(int index, int value)
 
 bool RemoteSettings::inRange(int val, byte settingIndex)
 {
-  return ((settingRules[settingIndex][1] <= val) && (val <= settingRules[settingIndex][2]));
+  return ((SETTINGS_RULES[settingIndex][1] <= val) && (val <= SETTINGS_RULES[settingIndex][2]));
 }

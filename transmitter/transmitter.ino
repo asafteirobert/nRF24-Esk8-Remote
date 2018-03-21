@@ -1,3 +1,4 @@
+#include "Constants.h"
 #include "RemoteSettings.h"
 #include <U8g2lib.h>
 #include <Wire.h>
@@ -17,34 +18,6 @@
 // Defining the type of display used (128x32)
 U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
-const static unsigned char logo_bits[] PROGMEM =
-{
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x80, 0x3c, 0x01,
-  0xe0, 0x00, 0x07, 0x70, 0x18, 0x0e, 0x30, 0x18, 0x0c, 0x98, 0x99, 0x19,
-  0x80, 0xff, 0x01, 0x04, 0xc3, 0x20, 0x0c, 0x99, 0x30, 0xec, 0xa5, 0x37,
-  0xec, 0xa5, 0x37, 0x0c, 0x99, 0x30, 0x04, 0xc3, 0x20, 0x80, 0xff, 0x01,
-  0x98, 0x99, 0x19, 0x30, 0x18, 0x0c, 0x70, 0x18, 0x0e, 0xe0, 0x00, 0x07,
-  0x80, 0x3c, 0x01, 0x00, 0x7e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-const static unsigned char signal_transmitting_bits[] PROGMEM =
-{
-  0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x0f,
-  0x33, 0x0f, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
-};
-
-const static unsigned char signal_connected_bits[] PROGMEM =
-{
-  0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x09,
-  0x33, 0x09, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
-};
-
-const static unsigned char signal_noconnection_bits[] PROGMEM =
-{
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x09,
-  0x00, 0x09, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
 //Telemetry data returned from the receiver
 struct returnDataType
 {
@@ -56,25 +29,13 @@ byte currentSetting = 0;
 struct returnDataType returnData;
 struct RemoteSettings remoteSettings;
 
-// Pin defination
-const byte triggerPin = 4;
-const int batteryMeasurePin = A2;
-const int hallSensorPin = A3;
-
-// Battery monitoring
-const float minVoltage = 3.4;
-const float maxVoltage = 4.2;
-const float refVoltage = 1.089;
-const float voltageDivider = 5.7;
 
 // Defining variables for Hall Effect throttle.
 short hallMeasurement, throttle;
-const byte hallCenterMargin = 4;
 
 // Defining variables for NRF24 communication
 bool connected = false;
 short failCount;
-const uint64_t pipe = 0xE8E8F0F0E1LL; // If you change the pipe, you will need to update it on the receiver to.
 unsigned long lastTransmission;
 
 // Defining variables for OLED display
@@ -85,7 +46,7 @@ unsigned long lastSignalBlink;
 unsigned long lastDataRotation;
 
 // RF24 object for NRF24 communication
-RF24 radio(9, 10);
+RF24 radio(PIN_NRF_CE, PIN_NRF_CS);
 
 // Defining variables for Settings menu
 bool changeSettings = false;
@@ -103,9 +64,9 @@ void setup()
 
   remoteSettings.loadFromEEPROM();
 
-  pinMode(triggerPin, INPUT_PULLUP);
-  pinMode(hallSensorPin, INPUT);
-  pinMode(batteryMeasurePin, INPUT);
+  pinMode(PIN_TRIGGER, INPUT_PULLUP);
+  pinMode(PIN_HALL_SENSOR, INPUT);
+  pinMode(PIN_BATTERY_MEASURE, INPUT);
 
   u8g2.begin();
 
@@ -123,7 +84,7 @@ void setup()
   radio.setDataRate(RF24_250KBPS);
   radio.enableAckPayload();
   radio.enableDynamicPayloads();
-  radio.openWritingPipe(pipe);
+  radio.openWritingPipe(NRF_PIPE);
 
 #ifdef DEBUG
   printf_begin();
@@ -212,7 +173,7 @@ void controlSettingsMenu()
     }
     else
     {
-      if (currentSetting < (remoteSettings.numOfSettings - 1))
+      if (currentSetting < (SETTINGS_COUNT - 1))
       {
         currentSetting++;
         settingsLoopFlag = true;
@@ -248,7 +209,7 @@ void drawSettingsMenu()
   int x = 0; int y = 10;
 
   // Draw setting title
-  String displayString = RemoteSettings::settingNames[currentSetting][0];
+  String displayString = SETTINGS_NAMES[currentSetting][0];
   displayString.toCharArray(displayBuffer, displayString.length() + 1);
 
   u8g2.setFont(u8g2_font_profont12_tr);
@@ -256,7 +217,7 @@ void drawSettingsMenu()
 
   int val = remoteSettings.getSettingValue(currentSetting);
 
-  displayString = (String)val + "" + RemoteSettings::settingNames[currentSetting][1];
+  displayString = (String)val + "" + SETTINGS_NAMES[currentSetting][1];
   displayString.toCharArray(displayBuffer, displayString.length() + 1);
   u8g2.setFont(u8g2_font_10x20_tr);
 
@@ -273,7 +234,7 @@ void drawSettingsMenu()
 // Return true if trigger is activated, false otherwice
 boolean triggerActive()
 {
-    return digitalRead(triggerPin) == LOW;
+    return digitalRead(PIN_TRIGGER) == LOW;
 }
 
 // Function used to transmit the throttle value, and receive the telemetry data.
@@ -324,7 +285,7 @@ void calculateThrottlePosition()
   int total = 0;
   for (int i = 0; i < 10; i++)
   {
-    total += analogRead(hallSensorPin);
+    total += analogRead(PIN_HALL_SENSOR);
   }
   hallMeasurement = total / 10;
 
@@ -336,7 +297,7 @@ void calculateThrottlePosition()
     throttle = constrain(map(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 127), 0, 127);
 
   // removeing center noise
-  if (abs(throttle - 127) < hallCenterMargin)
+  if (abs(throttle - 127) < THROTTLE_DEADZONE)
     throttle = 127;
 }
 
@@ -345,31 +306,31 @@ int batteryLevel()
 {
   float voltage = batteryVoltage();
 
-  if (voltage <= minVoltage)
+  if (voltage <= REMOTE_BATTERY_MIN_VOLTAGE)
     return 0;
-  else if (voltage >= maxVoltage)
+  else if (voltage >= REMOTE_BATTERY_MAX_VOLTAGE)
     return 100;
   else
-    return (voltage - minVoltage) * 100 / (maxVoltage - minVoltage);
+    return (voltage - REMOTE_BATTERY_MIN_VOLTAGE) * 100 / (REMOTE_BATTERY_MAX_VOLTAGE - REMOTE_BATTERY_MIN_VOLTAGE);
 }
 
 // Function to calculate and return the remote's battery voltage.
 float batteryVoltage()
 {
   analogReference(INTERNAL);
-  analogRead(batteryMeasurePin);
+  analogRead(PIN_BATTERY_MEASURE);
   delay(5);
-  analogRead(batteryMeasurePin);
+  analogRead(PIN_BATTERY_MEASURE);
 
   int total = 0;
   for (int i = 0; i < 10; i++)
-    total += analogRead(batteryMeasurePin);
+    total += analogRead(PIN_BATTERY_MEASURE);
 
   analogReference(DEFAULT);
-  analogRead(hallSensorPin);
+  analogRead(PIN_HALL_SENSOR);
   delay(1);
 
-  return (refVoltage / 1024.0) * ((float)total / 10.0) * voltageDivider;
+  return (REMOTE_BATTERY_SENSOR_REF_VOLTAGE / 1024.0) * ((float)total / 10.0) * REMOTE_BATTERY_SENSOR_MULTIPLIER;
 }
 
 void updateMainDisplay()
@@ -396,7 +357,7 @@ void drawStartScreen()
 {
   u8g2.clearBuffer();
 
-  u8g2.drawXBMP(4, 4, 24, 24, logo_bits);
+  u8g2.drawXBMP(4, 4, 24, 24, ICON_LOGO);
 
   String displayString = F("Esk8 remote");
   displayString.toCharArray(displayBuffer, 12);
@@ -525,9 +486,9 @@ void drawSignal()
   if (connected == true)
   {
     if (triggerActive())
-      u8g2.drawXBMP(x, y, 12, 12, signal_transmitting_bits);
+      u8g2.drawXBMP(x, y, 12, 12, ICON_SIGNAL_TRANSMITTING);
     else
-      u8g2.drawXBMP(x, y, 12, 12, signal_connected_bits);
+      u8g2.drawXBMP(x, y, 12, 12, ICON_SIGNAL_CONNECTED);
   }
   else
   {
@@ -538,9 +499,9 @@ void drawSignal()
     }
 
     if (signalBlink == true)
-      u8g2.drawXBMP(x, y, 12, 12, signal_connected_bits);
+      u8g2.drawXBMP(x, y, 12, 12, ICON_SIGNAL_CONNECTED);
     else
-      u8g2.drawXBMP(x, y, 12, 12, signal_noconnection_bits);
+      u8g2.drawXBMP(x, y, 12, 12, ICON_SIGNAL_NOCONNECTION);
   }
 }
 
