@@ -34,9 +34,9 @@ public:
   long settingsVersion;
   bool rotateDisplay;
   bool barShowsInput;
-  byte batteryType;
+  byte batteryType;//change to cell min voltage and cell max voltage?
   byte batteryCells;
-  byte throttleDeadzone;
+  float throttleDeadzone;
   int minHallValue;
   int centerHallValue;
   int maxHallValue;
@@ -47,6 +47,7 @@ public:
   float cruiseAccelerationTime;
   //telemetry voltage multiplier
   //remote voltage multiplier
+  //use VESC
 };
 #endif
 

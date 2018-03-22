@@ -4,7 +4,7 @@
 
 // ======= Settings =======
 const byte SETTINGS_COUNT = 14;
-const long SETTINGS_VERSION_CHECK = 149778290; //change to rewrite settings
+const long SETTINGS_VERSION_CHECK = 149778291; //change to rewrite settings
 
 const int SETTINGS_RULES[SETTINGS_COUNT][3] =
 {
@@ -13,7 +13,7 @@ const int SETTINGS_RULES[SETTINGS_COUNT][3] =
 { 1, 0, 1 },
 { 0, 0, 1 }, // 0 Li-ion & 1 LiPo
 { 10, 0, 12 },
-{ 3, 0, 100 },
+{ 2, 0, 50 },
 { 150, 0, 1023 },
 { 512, 0, 1023 },
 { 874, 0, 1023 },

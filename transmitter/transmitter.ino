@@ -31,7 +31,9 @@ struct RemoteSettings remoteSettings;
 
 
 // Defining variables for Hall Effect throttle.
-short hallMeasurement, throttle;
+float hallMeasurement;
+float throttle = 0.5;
+unsigned long lastThrottleMeasurement = 0;
 
 // Defining variables for NRF24 communication
 bool connected = false;
@@ -106,8 +108,8 @@ void loop()
   }
   else
   {
-    if (!isTriggerButtonActive() && throttle>127)
-      throttle = 127;
+    if (!isTriggerButtonActive() && throttle>0.5)
+      throttle = 0.5;
 
     // Transmit to receiver
     transmitThrottle();
@@ -272,18 +274,60 @@ void calculateThrottlePosition()
   {
     total += analogRead(PIN_HALL_SENSOR);
   }
-  hallMeasurement = total / 10;
+  hallMeasurement = (float)total / 10;
 
-  DEBUG_PRINT((String)hallMeasurement);
+  float desiredThrottle;
 
   if (hallMeasurement >= remoteSettings.centerHallValue)
-    throttle = constrain(map(hallMeasurement, remoteSettings.centerHallValue, remoteSettings.maxHallValue, 127, 255), 127, 255);
+    desiredThrottle = ((constrain(mapfloat(hallMeasurement, remoteSettings.centerHallValue, remoteSettings.maxHallValue, 0.5, 1), 0.5, 1) - 0.5) * remoteSettings.throttleEndpoint / 100) + 0.5 ;
   else
-    throttle = constrain(map(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 127), 0, 127);
+    desiredThrottle = 0.5 - ((0.5 - constrain(mapfloat(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 0.5), 0, 0.5)) * remoteSettings.breakEndpoint / 100);
 
-  // removeing center noise
-  if (abs(throttle - 127) < remoteSettings.throttleDeadzone)
-    throttle = 127;
+  // removing center noise
+  if (abs(desiredThrottle - 0.5) <= remoteSettings.throttleDeadzone / 100 / 2)
+    desiredThrottle = 0.5;
+
+
+
+  //acceleration logic
+  unsigned long microsNow = micros();
+  float timeDifference = microsNow - lastThrottleMeasurement;
+  lastThrottleMeasurement = microsNow;
+
+  float difference = desiredThrottle - throttle;
+  if (difference > 0 && remoteSettings.throttleAccelerationTime > 0) //accelerating
+  {
+    float maxThrottleChange = timeDifference / remoteSettings.throttleAccelerationTime / 1000000 / 2;
+    if (difference > maxThrottleChange)
+    {
+      if (throttle > 0.5)
+        throttle = throttle + maxThrottleChange;
+      else
+        throttle = min(desiredThrottle, 0.5 + maxThrottleChange);
+    }
+    else
+      throttle = desiredThrottle;
+  }
+  else if (difference < 0 && remoteSettings.breakAccelerationTime > 0) //braking
+  {
+    float maxThrottleChange = timeDifference / remoteSettings.breakAccelerationTime / 1000000 / 2;
+    if (-difference > maxThrottleChange)
+    {
+      if (throttle < 0.5)
+        throttle = throttle - maxThrottleChange;
+      else
+        throttle = max(desiredThrottle, 0.5 - maxThrottleChange);
+    }
+    else
+      throttle = desiredThrottle;
+  }
+  else
+    throttle = desiredThrottle;
+
+  DEBUG_PRINT(String(hallMeasurement) + "  " + String(throttle));
+
+  //final sanity check
+  throttle = constrain(throttle, 0, 1);
 }
 
 // Function used to indicate the remotes battery level.
@@ -302,6 +346,7 @@ int batteryLevel()
 // Function to calculate and return the remote's battery voltage.
 float batteryVoltage()
 {
+  //TODO: because of the delays, only calculate this once a second
   analogReference(INTERNAL);
   analogRead(PIN_BATTERY_MEASURE);
   delay(5);
@@ -447,16 +492,16 @@ void drawThrottle()
   u8g2.drawHLine(x, y + 10, 5);
   u8g2.drawHLine(x + 52 - 4, y + 10, 5);
 
-  if (throttle >= 127)
+  if (throttle >= 0.5)
   {
-    int width = map(throttle, 127, 255, 0, 49);
+    int width = mapfloat(throttle, 0.5, 1, 0, 49);
 
     for (int i = 0; i < width; i++)
       u8g2.drawVLine(x + i + 2, y + 2, 7);
   }
   else
   {
-    int width = map(throttle, 0, 126, 49, 0);
+    int width = mapfloat(throttle, 0, 0.5, 49, 0);
     for (int i = 0; i < width; i++)
       u8g2.drawVLine(x + 50 - i, y + 2, 7);
 
@@ -506,4 +551,9 @@ void drawBatteryLevel()
     if (p <= level)
       u8g2.drawBox(x + 4 + (3 * i), y + 2, 2, 5);
   }
+}
+
+float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }

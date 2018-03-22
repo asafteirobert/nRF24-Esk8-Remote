@@ -23,7 +23,7 @@ Servo servoOutput2;
 
 bool recievedData = false;
 uint32_t lastTimeReceived = 0;
-int outputValue = 127;
+float outputValue = 0.5;
 //unsigned long lastDataCheck;
 
 
@@ -77,10 +77,10 @@ void loop()
   else if ((millis() - lastTimeReceived) > timeoutMax)
   {
     // No speed is received within the timeout limit.
-    outputValue = 127;
+    outputValue = 0.5;
   }
-
-  short pulseWidth = map(outputValue, 0, 255, 1000, 2000);
+  outputValue = constrain(outputValue, 0.0, 1.0);
+  short pulseWidth = mapfloat(outputValue, 0, 1, 1000, 2000);
   servoOutput1.writeMicroseconds(pulseWidth);
   servoOutput2.writeMicroseconds(pulseWidth);
 }
@@ -91,4 +91,9 @@ float readSensorVoltage()
   for (int i = 0; i < 10; i++)
     total += analogRead(voltageSensorPin);
   return (voltageSensorReference / 1024.0) * ((float)total / 10.0) * voltageSensorMultiplier;
+}
+
+float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }

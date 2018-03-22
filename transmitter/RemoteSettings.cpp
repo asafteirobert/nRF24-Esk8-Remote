@@ -178,7 +178,7 @@ String RemoteSettings::getSettingStringUnit(int index)
   case 1: return String();
   case 2: return String();
   case 3: return String(F("S"));
-  case 4: return String();
+  case 4: return String(F("%"));
   case 5: return String();
   case 6: return String();
   case 7: return String();
@@ -200,7 +200,7 @@ String RemoteSettings::getSettingValueString(int index)
   case 1: return this->barShowsInput ? String(F("True")) : String(F("False"));
   case 2: return this->batteryType ? String(F("LiIon")) : String(F("LiPo"));
   case 3: return String(this->batteryCells);
-  case 4: return String(this->throttleDeadzone);
+  case 4: return String(int(this->throttleDeadzone));
   case 5: return String(this->minHallValue);
   case 6: return String(this->centerHallValue);
   case 7: return String(this->maxHallValue);
