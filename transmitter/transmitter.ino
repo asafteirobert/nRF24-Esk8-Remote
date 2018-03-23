@@ -52,10 +52,13 @@ RF24 radio(PIN_NRF_CE, PIN_NRF_CS);
 
 // Defining variables for Settings menu
 bool changeSettings = false;
-
 bool settingsLoopFlag = false;
 bool settingsChangeFlag = false;
 bool settingsChangeValueFlag = false;
+
+//cruise control variables
+bool cruiseControlActive = false;
+float cruiseControlTarget = 0.6;
 
 void setup()
 {
@@ -276,53 +279,86 @@ void calculateThrottlePosition()
   }
   hallMeasurement = (float)total / 10;
 
-  float desiredThrottle;
+  float desiredThrottleFromSensor;
+  float initialThrottle = throttle;
 
   if (hallMeasurement >= remoteSettings.centerHallValue)
-    desiredThrottle = ((constrain(mapfloat(hallMeasurement, remoteSettings.centerHallValue, remoteSettings.maxHallValue, 0.5, 1), 0.5, 1) - 0.5) * remoteSettings.throttleEndpoint / 100) + 0.5 ;
+    desiredThrottleFromSensor = ((constrain(mapfloat(hallMeasurement, remoteSettings.centerHallValue, remoteSettings.maxHallValue, 0.5, 1), 0.5, 1) - 0.5) * remoteSettings.throttleEndpoint / 100) + 0.5;
   else
-    desiredThrottle = 0.5 - ((0.5 - constrain(mapfloat(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 0.5), 0, 0.5)) * remoteSettings.breakEndpoint / 100);
+    desiredThrottleFromSensor = 0.5 - ((0.5 - constrain(mapfloat(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 0.5), 0, 0.5)) * remoteSettings.breakEndpoint / 100);
 
   // removing center noise
-  if (abs(desiredThrottle - 0.5) <= remoteSettings.throttleDeadzone / 100 / 2)
-    desiredThrottle = 0.5;
+  if (abs(desiredThrottleFromSensor - 0.5) <= remoteSettings.throttleDeadzone / 100 / 2)
+    desiredThrottleFromSensor = 0.5;
 
+  throttle = desiredThrottleFromSensor;
 
-
-  //acceleration logic
+  //alter throttle based on acceleration logic
   unsigned long microsNow = micros();
   float timeDifference = microsNow - lastThrottleMeasurement;
   lastThrottleMeasurement = microsNow;
 
-  float difference = desiredThrottle - throttle;
+  float difference = desiredThrottleFromSensor - initialThrottle;
   if (difference > 0 && remoteSettings.throttleAccelerationTime > 0) //accelerating
   {
     float maxThrottleChange = timeDifference / remoteSettings.throttleAccelerationTime / 1000000 / 2;
     if (difference > maxThrottleChange)
     {
-      if (throttle > 0.5)
-        throttle = throttle + maxThrottleChange;
+      if (initialThrottle > 0.5)
+        throttle = initialThrottle + maxThrottleChange;
       else
-        throttle = min(desiredThrottle, 0.5 + maxThrottleChange);
+        throttle = min(desiredThrottleFromSensor, 0.5 + maxThrottleChange);
     }
-    else
-      throttle = desiredThrottle;
   }
   else if (difference < 0 && remoteSettings.breakAccelerationTime > 0) //braking
   {
     float maxThrottleChange = timeDifference / remoteSettings.breakAccelerationTime / 1000000 / 2;
     if (-difference > maxThrottleChange)
     {
-      if (throttle < 0.5)
-        throttle = throttle - maxThrottleChange;
+      if (initialThrottle < 0.5)
+        throttle = initialThrottle - maxThrottleChange;
       else
-        throttle = max(desiredThrottle, 0.5 - maxThrottleChange);
+        throttle = max(desiredThrottleFromSensor, 0.5 - maxThrottleChange);
+    }
+  }
+
+  //alter throttle based on cruise control
+  if (throttle >= 0.5) //ignore any CC if braking
+  {
+    if (isCruiseControlButtonActive())
+    {
+      if (!cruiseControlActive) //first time pressing CC
+      {
+        cruiseControlActive = true;
+        //reset CC to a new value if we have throttle, otherwise use previous value
+        if (throttle > 0.5)
+          cruiseControlTarget = throttle;
+      }
+
+      //when trigger throttle is above CC target, use throttle instead, for extra power
+      if (throttle < cruiseControlTarget)
+      {
+        //accelerate towards target
+        float difference = cruiseControlTarget - initialThrottle;
+        if (remoteSettings.cruiseAccelerationTime > 0)
+        {
+          float maxThrottleChange = timeDifference / remoteSettings.cruiseAccelerationTime / 1000000 / 2;
+          if (difference > maxThrottleChange)
+            if (initialThrottle > 0.5)
+              throttle = initialThrottle + maxThrottleChange;
+            else
+              throttle = min(cruiseControlTarget, 0.5 + maxThrottleChange);
+          else
+            throttle = cruiseControlTarget;
+        }
+        else 
+          throttle = cruiseControlTarget;
+      }
+
     }
     else
-      throttle = desiredThrottle;
+      cruiseControlActive = false;
   }
-  else
-    throttle = desiredThrottle;
 
   DEBUG_PRINT(String(hallMeasurement) + "  " + String(throttle));
 

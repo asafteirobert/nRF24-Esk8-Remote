@@ -48,6 +48,7 @@ public:
   //telemetry voltage multiplier
   //remote voltage multiplier
   //use VESC
+  //default CC value
 };
 #endif
 
