@@ -40,9 +40,9 @@ public:
   int minHallValue;
   int centerHallValue;
   int maxHallValue;
-  byte breakEndpoint;
+  byte brakeEndpoint;
   byte throttleEndpoint;
-  float breakAccelerationTime;
+  float brakeAccelerationTime;
   float throttleAccelerationTime;
   float cruiseAccelerationTime;
   //telemetry voltage multiplier

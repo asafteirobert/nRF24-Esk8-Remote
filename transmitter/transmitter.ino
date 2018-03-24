@@ -273,6 +273,7 @@ void calculateThrottlePosition()
 {
   // Hall sensor reading can be noisy, lets make an average reading.
   int total = 0;
+  //TODO: hall sensor calibration for low battery voltages
   for (int i = 0; i < 10; i++)
   {
     total += analogRead(PIN_HALL_SENSOR);
@@ -285,7 +286,7 @@ void calculateThrottlePosition()
   if (hallMeasurement >= remoteSettings.centerHallValue)
     desiredThrottleFromSensor = ((constrain(mapfloat(hallMeasurement, remoteSettings.centerHallValue, remoteSettings.maxHallValue, 0.5, 1), 0.5, 1) - 0.5) * remoteSettings.throttleEndpoint / 100) + 0.5;
   else
-    desiredThrottleFromSensor = 0.5 - ((0.5 - constrain(mapfloat(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 0.5), 0, 0.5)) * remoteSettings.breakEndpoint / 100);
+    desiredThrottleFromSensor = 0.5 - ((0.5 - constrain(mapfloat(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 0.5), 0, 0.5)) * remoteSettings.brakeEndpoint / 100);
 
   // removing center noise
   if (abs(desiredThrottleFromSensor - 0.5) <= remoteSettings.throttleDeadzone / 100 / 2)
@@ -310,9 +311,9 @@ void calculateThrottlePosition()
         throttle = min(desiredThrottleFromSensor, 0.5 + maxThrottleChange);
     }
   }
-  else if (difference < 0 && remoteSettings.breakAccelerationTime > 0) //braking
+  else if (difference < 0 && remoteSettings.brakeAccelerationTime > 0) //braking
   {
-    float maxThrottleChange = timeDifference / remoteSettings.breakAccelerationTime / 1000000 / 2;
+    float maxThrottleChange = timeDifference / remoteSettings.brakeAccelerationTime / 1000000 / 2;
     if (-difference > maxThrottleChange)
     {
       if (initialThrottle < 0.5)

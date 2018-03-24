@@ -58,9 +58,9 @@ int RemoteSettings::getSettingValue(int index)
   case 5: value = this->minHallValue;                break;
   case 6: value = this->centerHallValue;             break;
   case 7: value = this->maxHallValue;                break;
-  case 8: value = this->breakEndpoint;               break;
+  case 8: value = this->brakeEndpoint;               break;
   case 9: value = this->throttleEndpoint;            break;
-  case 10: value = this->breakAccelerationTime;      break;
+  case 10: value = this->brakeAccelerationTime;      break;
   case 11: value = this->throttleAccelerationTime;   break;
   case 12: value = this->cruiseAccelerationTime;     break;
   }
@@ -79,9 +79,9 @@ void RemoteSettings::setSettingValue(int index, int value)
   case 5: this->minHallValue = value;                break;
   case 6: this->centerHallValue = value;             break;
   case 7: this->maxHallValue = value;                break;
-  case 8: this->breakEndpoint = value;               break;
+  case 8: this->brakeEndpoint = value;               break;
   case 9: this->throttleEndpoint = value;            break;
-  case 10: this->breakAccelerationTime = value;      break;
+  case 10: this->brakeAccelerationTime = value;      break;
   case 11: this->throttleAccelerationTime = value;   break;
   case 12: this->cruiseAccelerationTime = value;     break;
   }
@@ -127,9 +127,9 @@ void RemoteSettings::increaseSetting(int index)
 
   case 10:
   {
-    float val = this->breakAccelerationTime + 0.1;
+    float val = this->brakeAccelerationTime + 0.1;
     if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
-      this->breakAccelerationTime = val;
+      this->brakeAccelerationTime = val;
     break;
   }
   case 11:
@@ -161,9 +161,9 @@ String RemoteSettings::getSettingString(int index)
   case 5: return String(F("Throttle min"));
   case 6: return String(F("Throttle center"));
   case 7: return String(F("Throttle max"));
-  case 8: return String(F("Break endpoint"));
+  case 8: return String(F("Brake endpoint"));
   case 9: return String(F("Thr. endpoint"));
-  case 10: return String(F("Break accel."));
+  case 10: return String(F("Brake accel."));
   case 11: return String(F("Throttle accel."));
   case 12: return String(F("Cruise accel."));
   case 13: return String(F("RESET ALL"));
@@ -204,9 +204,9 @@ String RemoteSettings::getSettingValueString(int index)
   case 5: return String(this->minHallValue);
   case 6: return String(this->centerHallValue);
   case 7: return String(this->maxHallValue);
-  case 8: return String(this->breakEndpoint);
+  case 8: return String(this->brakeEndpoint);
   case 9: return String(this->throttleEndpoint);
-  case 10: return String(this->breakAccelerationTime);
+  case 10: return String(this->brakeAccelerationTime);
   case 11: return String(this->throttleAccelerationTime);
   case 12: return String(this->cruiseAccelerationTime);
   case 13: return String(F("Confirm"));
@@ -255,9 +255,9 @@ void RemoteSettings::decreaseSetting(int index)
 
   case 10:
   {
-    float val = this->breakAccelerationTime - 0.1;
+    float val = this->brakeAccelerationTime - 0.1;
     if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
-      this->breakAccelerationTime = val;
+      this->brakeAccelerationTime = val;
     break;
   }
   case 11:

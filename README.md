@@ -8,7 +8,7 @@ The remote uses an Arduino Pro Mini 3v3, 128x32 OLED display, OH49E hall sensor 
 
 It has 3 switches:
 
-1. Dead man switch. This needs to be held down at all times
+1. Dead man switch. This needs to be held down in order to accelerate.
 2. Page switch. Used to go through the settings menu and to change the information displayed on the screen.
 3. Cruise control button. Hold this down to use cruise control.
 
@@ -17,17 +17,17 @@ Press and hold the Dead man switch while the remote is starting to enter the set
 
 Setting | Default | Range | Description
 --- | --- | --- | --- 
-Rotate Display | False | True, False | Rotate the display, so you can use the remote in the other hand
-Bar shows input | True | True, False | (Not implemeted yet) If true the bar on the main display shows a graphical representation of the signal sent to the display. Otherwise it shows a progress depending on the current setting(e.g. main battery %, speed % of max speed). Recommended to be left on when first using the remote to understand how acceleration, endpoints and cruise control work.
+Rotate Display | False | True, False | Rotate the display, so you can use the remote in the other hand. Setting takes effect after restart.
+Bar shows input | True | True, False | (Not implemeted yet) If true the bar on the main display shows a graphical representation of the signal sent to the receiver. Otherwise it shows a progress depending on the current setting(e.g. main battery %, speed % of max speed). Recommended to be left on when first using the remote to understand how acceleration, endpoints and cruise control work.
 Battery type | | | Not implemented yet
 Battery cells | 10s | 0-12S| Not implemented yet
 Throttle deadzone | 2% | 0-50% | How much of the stck travel is ignored in the center.
-Throttle min | 150 | 0-1023 | Hall sensor value for minimum throttle. Move your stick to the maximum break position and press the Cruise control button to automatically set the value.
+Throttle min | 150 | 0-1023 | Hall sensor value for minimum throttle. Move your stick to the maximum brake position and press the Cruise control button to automatically set the value.
 Throttle center | 512 | 0-1023 | Hall sensor value for middle throttle. Lave your stick to the idle position and press the Cruise control button to automatically set the value.
 Throttle max | 874 | 0-1023 | Hall sensor value for maximum throttle. Lave your stick to the maximum throttle position and press the Cruise control button to automatically set the value.
-Break endpoint | 100% | 0-100%| The end point of the braking value. Set it lower to have softer breaks
+Brake endpoint | 100% | 0-100%| The end point of the braking value. Set it lower to have softer brakes
 Thr. endpoint | 100% | 0-100% | The end point of the throttle value. Set it lower to have smaller maximum throttle.
-Break accel. | 0sec | 0-5sec | Braking acceleration time: The number of seconds it takes to reach 100% break. Set it to as low as possible so when slamming the breaks you don't land on your face. Set to 0 to disable. USE WITH CAUTION: This makes breaks respond softly, so use small values and make sure you test that you are always able to stop in time.
+Brake accel. | 0sec | 0-5sec | Braking acceleration time: The number of seconds it takes to reach 100% brake. Set it to as low as possible so when slamming the brakes you don't land on your face. Set to 0 to disable. USE WITH CAUTION: This makes brakes respond softly, so use small values and make sure you test that you are always able to stop in time.
 Throttle accel. | 0sec | 0-5sec | Throttle acceleration time: The number of seconds it takes to reach 100% throttle. Set it so when you slam the throttle you are not thrown off the board. Set to 0 to disable.
 Cruise accel. | 1sec | 0-5sec | Cruise control acceleration time: The number of seconds it takes to reach 100% throttle when using cruise control. Set it so you comfortably accelerate towards the desired cruise control value. Set to 0 to disable.
 RESET ALL | | | Press the Cruise control button to reset all settings to default
