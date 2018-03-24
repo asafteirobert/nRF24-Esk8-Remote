@@ -33,7 +33,7 @@ public:
   // data to hold setting values
   long settingsVersion;
   bool rotateDisplay;
-  bool barShowsInput;
+  bool barShowsInput;//delete
   byte batteryType;
   byte batteryCells;
   float throttleDeadzone;
@@ -47,8 +47,8 @@ public:
   float cruiseAccelerationTime;
   //telemetry voltage multiplier
   //remote voltage multiplier
+  //battery range
   //use VESC
-  //default CC value
 };
 #endif
 

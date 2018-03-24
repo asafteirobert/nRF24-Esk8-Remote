@@ -43,7 +43,7 @@ const byte REMOTE_BATTERY_TYPE = 1; //0 Lipo, 1 Li-ion
 
 //Typical cell voltage to percentage table for lipo and liion
 const byte BATTERY_LEVEL_TABLE_COUNT = 23;
-const float BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT][3] = //PROGMEM
+const static float BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT][3] PROGMEM =
 {
 { 3.1, 0, 0 },
 { 3.15, 0, 0 },

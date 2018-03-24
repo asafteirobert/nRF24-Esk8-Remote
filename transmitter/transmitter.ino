@@ -24,18 +24,16 @@ struct returnDataType
   float sensorVoltage = 0;
 };
 
-byte currentSetting = 0;
-
 struct returnDataType returnData;
+
 struct RemoteSettings remoteSettings;
 
-
-// Defining variables for Hall Effect throttle.
+// Hall Effect throttle.
 float hallMeasurement;
 float throttle = 0.5;
 unsigned long lastThrottleMeasurement = 0;
 
-// Defining variables for NRF24 communication
+// NRF24 communication
 bool connected = false;
 short failCount;
 unsigned long lastTransmission;
@@ -43,9 +41,9 @@ unsigned long lastTransmission;
 // Defining variables for OLED display
 char displayBuffer[20];
 short displayedPage = 0;
+bool displayedPageSwitchFlag = false;
 bool signalBlink = false;
 unsigned long lastSignalBlink;
-unsigned long lastDataRotation;
 bool batteryBlink = false;
 unsigned long lastBatteryBlink;
 
@@ -53,15 +51,19 @@ unsigned long lastBatteryBlink;
 // RF24 object for NRF24 communication
 RF24 radio(PIN_NRF_CE, PIN_NRF_CS);
 
-// Defining variables for Settings menu
+// Settings menu
 bool changeSettings = false;
 bool settingsLoopFlag = false;
 bool settingsChangeFlag = false;
 bool settingsChangeValueFlag = false;
+byte currentSetting = 0;
 
-//cruise control variables
+//cruise control
 bool cruiseControlActive = false;
 float cruiseControlTarget = 0.6;
+
+//main screen pages
+
 
 void setup()
 {
@@ -401,7 +403,6 @@ void updateMainDisplay()
   }
   else
   {
-    drawThrottle();
     drawPage();
     drawBatteryLevel();
     drawSignal();
@@ -449,19 +450,19 @@ void drawPage()
   int x = 0;
   int y = 16;
 
-  // Rotate the realtime data each 4s.
-  /*
-  if ((millis() - lastDataRotation) >= 4000)
+  if (isPageSwitchButtonActive())
   {
-    lastDataRotation = millis();
-    displayedPage++;
-
-    if (displayedPage > 2)
+    if (!displayedPageSwitchFlag)
     {
-      displayedPage = 0;
+      displayedPageSwitchFlag = true;
+      displayedPage++;
+
+      if (displayedPage >= 2)
+        displayedPage = 0;
     }
   }
-  */
+  else
+    displayedPageSwitchFlag = false;
 
   switch (displayedPage)
   {
@@ -469,6 +470,12 @@ void drawPage()
     value = returnData.sensorVoltage;
     suffix = "V";
     prefix = F("BATTERY");
+    decimals = 1;
+    break;
+  case 1:
+    value = constrain(throttle * 100, 0.0, 99.9);
+    suffix = "%";
+    prefix = F("OUTPUT");
     decimals = 1;
     break;
   }
@@ -505,33 +512,46 @@ void drawPage()
   displayString.toCharArray(displayBuffer, 10);
   u8g2.setFont(u8g2_font_profont12_tr);
   u8g2.drawStr(x + 86 + 2, y + 13, displayBuffer);
-}
 
-void drawThrottle()
-{
-  int x = 0;
-  int y = 18;
+  //Draw bar
+  x = 0;
+  y = 18;
 
-  // Draw throttle
   u8g2.drawHLine(x, y, 52);
   u8g2.drawVLine(x, y, 10);
   u8g2.drawVLine(x + 52, y, 10);
   u8g2.drawHLine(x, y + 10, 5);
   u8g2.drawHLine(x + 52 - 4, y + 10, 5);
 
-  if (throttle >= 0.5)
+  switch (displayedPage)
   {
-    int width = mapfloat(throttle, 0.5, 1, 0, 49);
+  case 0:
+  {
+    //draw telemetry battery level
+    int width = mapfloat(calculateBatteryLevel(returnData.sensorVoltage / remoteSettings.batteryCells, remoteSettings.batteryType), 0, 100, 0, 49);
 
     for (int i = 0; i < width; i++)
       u8g2.drawVLine(x + i + 2, y + 2, 7);
   }
-  else
+    break;
+  case 1:
+  // Draw throttle
   {
-    int width = mapfloat(throttle, 0, 0.5, 49, 0);
-    for (int i = 0; i < width; i++)
-      u8g2.drawVLine(x + 50 - i, y + 2, 7);
+    if (throttle >= 0.5)
+    {
+      int width = mapfloat(throttle, 0.5, 1, 0, 49);
 
+      for (int i = 0; i < width; i++)
+        u8g2.drawVLine(x + i + 2, y + 2, 7);
+    }
+    else
+    {
+      int width = mapfloat(throttle, 0, 0.5, 49, 0);
+      for (int i = 0; i < width; i++)
+        u8g2.drawVLine(x + 50 - i, y + 2, 7);
+    }
+  }
+  break;
   }
 }
 
@@ -606,21 +626,21 @@ float calculateBatteryLevel(float volatge, byte type)
   type = type + 1; //index 1 for lipo, index 2 for liion
 
   // volatge is less than the minimum
-  if (volatge < BATTERY_LEVEL_TABLE[0][0])
-    return BATTERY_LEVEL_TABLE[0][type];
+  if (volatge < pgm_read_float(&(BATTERY_LEVEL_TABLE[0][0])))
+    return pgm_read_float(&(BATTERY_LEVEL_TABLE[0][type]));
 
   //voltage more than maximum
-  if (volatge > BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT - 1][0])
-    return BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT - 1][type];
+  if (volatge > pgm_read_float(&(BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT - 1][0])))
+    return pgm_read_float(&(BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT - 1][type]));
 
   // find i, such that BATTERY_LEVEL_TABLE[i][0] <= volatge < BATTERY_LEVEL_TABLE[i+1][0]
   for (i = 0; i < BATTERY_LEVEL_TABLE_COUNT - 1; i++)
-    if (BATTERY_LEVEL_TABLE[i + 1][0] > volatge)
+    if (pgm_read_float(&(BATTERY_LEVEL_TABLE[i + 1][0])) > volatge)
       break;
 
   //interpolate
-  return BATTERY_LEVEL_TABLE[i][type] +
-    (volatge - BATTERY_LEVEL_TABLE[i][0]) *
-    (BATTERY_LEVEL_TABLE[i + 1][type] - BATTERY_LEVEL_TABLE[i][type]) /
-    (BATTERY_LEVEL_TABLE[i + 1][0] - BATTERY_LEVEL_TABLE[i][0]);
+  return pgm_read_float(&(BATTERY_LEVEL_TABLE[i][type])) +
+    (volatge - pgm_read_float(&(BATTERY_LEVEL_TABLE[i][0]))) *
+    (pgm_read_float(&(BATTERY_LEVEL_TABLE[i + 1][type])) - pgm_read_float(&(BATTERY_LEVEL_TABLE[i][type]))) /
+    (pgm_read_float(&(BATTERY_LEVEL_TABLE[i + 1][0])) - pgm_read_float(&(BATTERY_LEVEL_TABLE[i][0])));
 }
