@@ -54,8 +54,8 @@ void setup()
 
 void loop()
 {
-
-  returnData.sensorVoltage = readSensorVoltage();
+  //average across a long time to avoid jitter
+  returnData.sensorVoltage = returnData.sensorVoltage * 0.9 + 0.1 * readSensorVoltage();
 
   // If transmission is available
   if (radio.available())

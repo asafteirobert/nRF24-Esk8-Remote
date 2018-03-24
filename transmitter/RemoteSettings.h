@@ -34,7 +34,7 @@ public:
   long settingsVersion;
   bool rotateDisplay;
   bool barShowsInput;
-  byte batteryType;//change to cell min voltage and cell max voltage?
+  byte batteryType;
   byte batteryCells;
   float throttleDeadzone;
   int minHallValue;

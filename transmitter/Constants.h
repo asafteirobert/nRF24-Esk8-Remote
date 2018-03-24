@@ -11,7 +11,7 @@ const int SETTINGS_RULES[SETTINGS_COUNT][3] =
 // Setting rules format: default, min, max.
 { 0, 0, 1 },
 { 1, 0, 1 },
-{ 0, 0, 1 }, // 0 Li-ion & 1 LiPo
+{ 0, 0, 1 }, // 0 Lipo, 1 Li-ion
 { 10, 0, 12 },
 { 2, 0, 50 },
 { 150, 0, 1023 },
@@ -37,10 +37,38 @@ const uint8_t PIN_NRF_CS = 10;
 const uint64_t NRF_PIPE = 0xE8E8F0F0E1LL;
 
 // ======= Battery monitoring =======
-const float REMOTE_BATTERY_MIN_VOLTAGE = 3.4;
-const float REMOTE_BATTERY_MAX_VOLTAGE = 4.2;
 const float REMOTE_BATTERY_SENSOR_REF_VOLTAGE = 1.089;
 const float REMOTE_BATTERY_SENSOR_MULTIPLIER = 5.7;
+const byte REMOTE_BATTERY_TYPE = 1; //0 Lipo, 1 Li-ion
+
+//Typical cell voltage to percentage table for lipo and liion
+const byte BATTERY_LEVEL_TABLE_COUNT = 23;
+const float BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT][3] = //PROGMEM
+{
+{ 3.1, 0, 0 },
+{ 3.15, 0, 0 },
+{ 3.2, 0, 1 },
+{ 3.25, 0, 1 },
+{ 3.3, 1, 2 },
+{ 3.35, 2, 2 },
+{ 3.4, 3, 3 },
+{ 3.45, 3, 4 },
+{ 3.5, 3, 6 },
+{ 3.55, 4, 8 },
+{ 3.6, 6, 13 },
+{ 3.65, 9, 21 },
+{ 3.7, 13, 33 },
+{ 3.75, 23, 49 },
+{ 3.8, 33, 59 },
+{ 3.85, 48, 68 },
+{ 3.9, 59, 75 },
+{ 3.95, 69, 83 },
+{ 4, 77, 88 },
+{ 4.05, 84, 95 },
+{ 4.1, 90, 98 },
+{ 4.15, 96, 99 },
+{ 4.2, 100, 100 }
+};
 
 // ======= Icons =======
 const static unsigned char ICON_LOGO[] PROGMEM =

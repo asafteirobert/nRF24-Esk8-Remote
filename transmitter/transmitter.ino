@@ -46,6 +46,9 @@ short displayedPage = 0;
 bool signalBlink = false;
 unsigned long lastSignalBlink;
 unsigned long lastDataRotation;
+bool batteryBlink = false;
+unsigned long lastBatteryBlink;
+
 
 // RF24 object for NRF24 communication
 RF24 radio(PIN_NRF_CE, PIN_NRF_CS);
@@ -367,19 +370,6 @@ void calculateThrottlePosition()
   throttle = constrain(throttle, 0, 1);
 }
 
-// Function used to indicate the remotes battery level.
-int batteryLevel()
-{
-  float voltage = batteryVoltage();
-
-  if (voltage <= REMOTE_BATTERY_MIN_VOLTAGE)
-    return 0;
-  else if (voltage >= REMOTE_BATTERY_MAX_VOLTAGE)
-    return 100;
-  else
-    return (voltage - REMOTE_BATTERY_MIN_VOLTAGE) * 100 / (REMOTE_BATTERY_MAX_VOLTAGE - REMOTE_BATTERY_MIN_VOLTAGE);
-}
-
 // Function to calculate and return the remote's battery voltage.
 float batteryVoltage()
 {
@@ -574,23 +564,63 @@ void drawSignal()
 
 void drawBatteryLevel()
 {
-  int level = batteryLevel();
+  float level = calculateBatteryLevel(batteryVoltage(), REMOTE_BATTERY_TYPE);
 
   // Position on OLED
   int x = 108; int y = 4;
-
-  u8g2.drawFrame(x + 2, y, 18, 9);
-  u8g2.drawBox(x, y + 2, 2, 5);
-
-  for (int i = 0; i < 5; i++)
+  if (level > 1)
   {
-    int p = round((100 / 5) * i);
-    if (p <= level)
+    u8g2.drawFrame(x + 2, y, 18, 9);
+    u8g2.drawBox(x, y + 2, 2, 5);
+
+    byte bars = truncf(level / (100.0 / 6));
+    for (int i = 0; (i < 5 && i < bars); i++)
       u8g2.drawBox(x + 4 + (3 * i), y + 2, 2, 5);
+  }
+  else
+  {
+    if (millis() - lastBatteryBlink > 500)
+    {
+      batteryBlink = !batteryBlink;
+      lastBatteryBlink = millis();
+    }
+
+    if (batteryBlink == true)
+    {
+      u8g2.drawFrame(x + 2, y, 18, 9);
+      u8g2.drawBox(x, y + 2, 2, 5);
+    }
   }
 }
 
 float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+//return percent from voltage. Type is 0 for Lipo, 1 for Li-ion
+float calculateBatteryLevel(float volatge, byte type)
+{
+  int i;
+  float dx, dy;
+  type = type + 1; //index 1 for lipo, index 2 for liion
+
+  // volatge is less than the minimum
+  if (volatge < BATTERY_LEVEL_TABLE[0][0])
+    return BATTERY_LEVEL_TABLE[0][type];
+
+  //voltage more than maximum
+  if (volatge > BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT - 1][0])
+    return BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT - 1][type];
+
+  // find i, such that BATTERY_LEVEL_TABLE[i][0] <= volatge < BATTERY_LEVEL_TABLE[i+1][0]
+  for (i = 0; i < BATTERY_LEVEL_TABLE_COUNT - 1; i++)
+    if (BATTERY_LEVEL_TABLE[i + 1][0] > volatge)
+      break;
+
+  //interpolate
+  return BATTERY_LEVEL_TABLE[i][type] +
+    (volatge - BATTERY_LEVEL_TABLE[i][0]) *
+    (BATTERY_LEVEL_TABLE[i + 1][type] - BATTERY_LEVEL_TABLE[i][type]) /
+    (BATTERY_LEVEL_TABLE[i + 1][0] - BATTERY_LEVEL_TABLE[i][0]);
 }
