@@ -71,19 +71,19 @@ void RemoteSettings::setSettingValue(int index, int value)
 {
   switch (index)
   {
-  case 0: this->rotateDisplay = value;               break;
-  case 1: this->barShowsInput = value;               break;
-  case 2: this->batteryType = value;                 break;
-  case 3: this->batteryCells = value;                break;
-  case 4: this->throttleDeadzone = value;            break;
-  case 5: this->minHallValue = value;                break;
-  case 6: this->centerHallValue = value;             break;
-  case 7: this->maxHallValue = value;                break;
-  case 8: this->brakeEndpoint = value;               break;
-  case 9: this->throttleEndpoint = value;            break;
-  case 10: this->brakeAccelerationTime = value;      break;
-  case 11: this->throttleAccelerationTime = value;   break;
-  case 12: this->cruiseAccelerationTime = value;     break;
+  case 0: this->rotateDisplay = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);               break;
+  case 1: this->barShowsInput = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);               break;
+  case 2: this->batteryType = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);                 break;
+  case 3: this->batteryCells = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);                break;
+  case 4: this->throttleDeadzone = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);            break;
+  case 5: this->minHallValue = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);                break;
+  case 6: this->centerHallValue = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);             break;
+  case 7: this->maxHallValue = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);                break;
+  case 8: this->brakeEndpoint = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);               break;
+  case 9: this->throttleEndpoint = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);            break;
+  case 10: this->brakeAccelerationTime = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);      break;
+  case 11: this->throttleAccelerationTime = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);   break;
+  case 12: this->cruiseAccelerationTime = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);     break;
   }
 }
 
@@ -102,8 +102,7 @@ void RemoteSettings::increaseSetting(int index)
   case 4:
   {
     int val = this->getSettingValue(index) + 1;
-    if (this->inRange(val, index))
-      this->setSettingValue(index, val);
+    this->setSettingValue(index, val);
     break;
   }
   case 5:
@@ -111,8 +110,7 @@ void RemoteSettings::increaseSetting(int index)
   case 7:
   {
     int val = this->getSettingValue(index) + 10;
-    if (this->inRange(val, index))
-      this->setSettingValue(index, val);
+    this->setSettingValue(index, val);
     break;
   }
 
@@ -120,30 +118,82 @@ void RemoteSettings::increaseSetting(int index)
   case 9:
   {
     int val = this->getSettingValue(index) + 1;
-    if (this->inRange(val, index))
-      this->setSettingValue(index, val);
+    this->setSettingValue(index, val);
     break;
   }
 
   case 10:
   {
     float val = this->brakeAccelerationTime + 0.1;
-    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
-      this->brakeAccelerationTime = val;
+    this->brakeAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
     break;
   }
   case 11:
   {
     float val = this->throttleAccelerationTime + 0.1;
-    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
-      this->throttleAccelerationTime = val;
+    this->throttleAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
     break;
   }
   case 12:
   {
     float val = this->cruiseAccelerationTime + 0.1;
-    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
-      this->cruiseAccelerationTime = val;
+    this->cruiseAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
+    break;
+  }
+  }
+}
+
+void RemoteSettings::decreaseSetting(int index)
+{
+  switch (index)
+  {
+  case 0:
+    this->rotateDisplay = !this->rotateDisplay;
+    break;
+  case 1:
+    this->barShowsInput = !this->barShowsInput;
+    break;
+  case 2:
+  case 3:
+  case 4:
+  {
+    int val = this->getSettingValue(index) - 1;
+    this->setSettingValue(index, val);
+    break;
+  }
+  case 5:
+  case 6:
+  case 7:
+  {
+    int val = this->getSettingValue(index) - 10;
+    this->setSettingValue(index, val);
+    break;
+  }
+
+  case 8:
+  case 9:
+  {
+    int val = this->getSettingValue(index) - 1;
+    this->setSettingValue(index, val);
+    break;
+  }
+
+  case 10:
+  {
+    float val = this->brakeAccelerationTime - 0.1;
+    this->brakeAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
+    break;
+  }
+  case 11:
+  {
+    float val = this->throttleAccelerationTime - 0.1;
+    this->throttleAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
+    break;
+  }
+  case 12:
+  {
+    float val = this->cruiseAccelerationTime - 0.1;
+    this->cruiseAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
     break;
   }
   }
@@ -214,68 +264,6 @@ String RemoteSettings::getSettingValueString(int index)
   return String(F("Unknown"));
 }
 
-
-void RemoteSettings::decreaseSetting(int index)
-{
-  switch (index)
-  {
-  case 0:
-    this->rotateDisplay = !this->rotateDisplay;
-    break;
-  case 1:
-    this->barShowsInput = !this->barShowsInput;
-    break;
-  case 2:
-  case 3:
-  case 4:
-  {
-    int val = this->getSettingValue(index) - 1;
-    if (this->inRange(val, index))
-      this->setSettingValue(index, val);
-    break;
-  }
-  case 5:
-  case 6:
-  case 7:
-  {
-    int val = this->getSettingValue(index) - 10;
-    if (this->inRange(val, index))
-      this->setSettingValue(index, val);
-    break;
-  }
-
-  case 8:
-  case 9:
-  {
-    int val = this->getSettingValue(index) - 1;
-    if (this->inRange(val, index))
-      this->setSettingValue(index, val);
-    break;
-  }
-
-  case 10:
-  {
-    float val = this->brakeAccelerationTime - 0.1;
-    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
-      this->brakeAccelerationTime = val;
-    break;
-  }
-  case 11:
-  {
-    float val = this->throttleAccelerationTime - 0.1;
-    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
-      this->throttleAccelerationTime = val;
-    break;
-  }
-  case 12:
-  {
-    float val = this->cruiseAccelerationTime - 0.1;
-    if ((SETTINGS_RULES[index][1] <= val) && (val <= SETTINGS_RULES[index][2]))
-      this->cruiseAccelerationTime = val;
-    break;
-  }
-  }
-}
 
 bool RemoteSettings::isThrottleHallSetting(int index)
 {
