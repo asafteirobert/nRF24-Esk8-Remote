@@ -3,14 +3,13 @@
 #include "arduino.h"
 
 // ======= Settings =======
-const byte SETTINGS_COUNT = 14;
-const long SETTINGS_VERSION_CHECK = 149778291; //change to rewrite settings
+const byte SETTINGS_COUNT = 16;
+const long SETTINGS_VERSION_CHECK = 149778292; //change to rewrite settings
 
 const int SETTINGS_RULES[SETTINGS_COUNT][3] =
 {
 // Setting rules format: default, min, max.
 { 0, 0, 1 },
-{ 1, 0, 1 },
 { 0, 0, 1 }, // 0 Lipo, 1 Li-ion
 { 10, 0, 12 },
 { 2, 0, 50 },
@@ -22,6 +21,9 @@ const int SETTINGS_RULES[SETTINGS_COUNT][3] =
 { 0, 0, 5 },
 { 0, 0, 5 },
 { 1, 0, 5 },
+{ 1, 0, 2 },
+{ 1, 0, 2 },
+{ 10, 0, 99 },
 { 0, 0, 0 },
 };
 
@@ -47,12 +49,12 @@ const static float BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT][3] PROGMEM =
 {
 { 3.1, 0, 0 },
 { 3.15, 0, 0 },
-{ 3.2, 0, 1 },
-{ 3.25, 0, 1 },
-{ 3.3, 1, 2 },
-{ 3.35, 2, 2 },
-{ 3.4, 3, 3 },
-{ 3.45, 3, 4 },
+{ 3.2, 0, 0 },
+{ 3.25, 0, 0 },
+{ 3.3, 0, 1 },
+{ 3.35, 0, 2 },
+{ 3.4, 1, 3 },
+{ 3.45, 2, 4 },
 { 3.5, 3, 6 },
 { 3.55, 4, 8 },
 { 3.6, 6, 13 },

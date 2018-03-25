@@ -20,7 +20,6 @@ Press and hold the Dead man switch while the remote is starting to enter the set
 Setting | Default | Range | Description
 --- | --- | --- | --- 
 Rotate Display | False | True, False | Rotate the display, so you can use the remote in the other hand. Setting takes effect after restart.
-Bar shows input | True | True, False | Not used, to be removed
 Battery type | | | The battery type that is connected to the receiver voltage sensor. Used for calculating the battery level in the "BATTERY" page.
 Battery cells | 10s | 0-12S| The cell count of the battery that is connected to the receiver voltage sensor. Used for calculating the battery level in the "BATTERY" page.
 Throttle deadzone | 2% | 0-50% | How much of the stck travel is ignored in the center.
@@ -32,6 +31,9 @@ Thr. endpoint | 100% | 0-100% | The end point of the throttle value. Set it lowe
 Brake accel. | 0sec | 0-5sec | Braking acceleration time: The number of seconds it takes to reach 100% brake. Set it to as low as possible so when slamming the brakes you don't land on your face. Set to 0 to disable. USE WITH CAUTION: This makes brakes respond softly, so use small values and make sure you test that you are always able to stop in time.
 Throttle accel. | 0sec | 0-5sec | Throttle acceleration time: The number of seconds it takes to reach 100% throttle. Set it so when you slam the throttle you are not thrown off the board. Set to 0 to disable.
 Cruise accel. | 1sec | 0-5sec | Cruise control acceleration time: The number of seconds it takes to reach 100% throttle when using cruise control. Set it so you comfortably accelerate towards the desired cruise control value. Set to 0 to disable.
+Voltage cal. sen. | 1 | 0-2 | Voltage calibration multiplier for the receiver sensor: Multiplies the voltage of the receiver sensor with this value, to calibrate it.
+Voltage cal. rem. | 1 | 0-2 | Voltage calibration multiplier for the remote battery: Multiplies the voltage of the remote battery sensor with this value, to calibrate it.
+Batery range | 10KM | 0-99KM | The typical range you get on a battery, used to calculate the remaining range on the "DISTANCE" page.
 RESET ALL | | | Press the Cruise control button to reset all settings to default
 
 
@@ -43,6 +45,8 @@ To set your cruise throttle, move the stick to the desired throttle position and
 If while holding the Cruise control button, your stick throttle value is larger than the cruise throttle, the stick throttle will be used instead. This way you can temporarily give extra throttle when cruising.
 
 ### Pages
-Battery: Shows the voltage of the battery connected to the receiver sensor. The progress bar shows the percentage of the battery level. The percentage is calculated based on the typical discharge curve of the battery type selected in the settings.
+Battery: Shows the voltage of the battery connected to the receiver sensor. The progress bar shows the percentage of the battery level. The percentage is calculated based on the typical discharge curve of the battery type selected in the settings. Remember to also set the correct number of battery cells.
+
+Distance: Shows the remaining range of the battery. This is just a convenience calculation, simply calculated by multiplying your battery level with the battery range from the settings.
 
 Output: Shows the signal sent to the receiver. Recommended to be left on when first using the remote to understand how acceleration, endpoints and cruise control work.

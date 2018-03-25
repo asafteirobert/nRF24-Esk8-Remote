@@ -4,9 +4,9 @@
 #include <Wire.h>
 #include <SPI.h>
 #include "RF24.h"
-#include "VescUart.h"
+//#include "VescUart.h"
 
-// #define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DEBUG_PRINT(x)  Serial.println (x)
@@ -211,8 +211,15 @@ void drawSettingsMenu()
   u8g2.drawStr(x, y, displayBuffer);
 
   displayString = remoteSettings.getSettingValueString(currentSetting) + remoteSettings.getSettingStringUnit(currentSetting);
-  displayString.toCharArray(displayBuffer, displayString.length() + 1);
   u8g2.setFont(u8g2_font_10x20_tr);
+  
+  if (currentSetting == 13)
+  {
+    u8g2.setFont(u8g2_font_timR14_tr);
+    displayString = displayString + '(' + batteryVoltage() + ')';
+  }
+
+  displayString.toCharArray(displayBuffer, displayString.length() + 1);
 
   u8g2.drawStr(x, y + 20, displayBuffer);
 }
@@ -248,6 +255,9 @@ void transmitThrottle()
     while (radio.isAckPayloadAvailable())
     {
       radio.read(&returnData, sizeof(returnData));
+      DEBUG_PRINT(String(returnData.sensorVoltage));
+      returnData.sensorVoltage = returnData.sensorVoltage * remoteSettings.telemetryVoltageMultiplier;
+      DEBUG_PRINT(String(returnData.sensorVoltage));
     }
 
     if (sendSuccess == true)
@@ -389,7 +399,7 @@ float batteryVoltage()
   analogRead(PIN_HALL_SENSOR);
   delay(1);
 
-  return (REMOTE_BATTERY_SENSOR_REF_VOLTAGE / 1024.0) * ((float)total / 10.0) * REMOTE_BATTERY_SENSOR_MULTIPLIER;
+  return (REMOTE_BATTERY_SENSOR_REF_VOLTAGE / 1024.0) * ((float)total / 10.0) * REMOTE_BATTERY_SENSOR_MULTIPLIER * remoteSettings.remoteVoltageMultiplier;
 }
 
 void updateMainDisplay()
@@ -445,8 +455,6 @@ void drawPage()
   String suffix;
   String prefix;
 
-  int first, last;
-
   int x = 0;
   int y = 16;
 
@@ -457,7 +465,7 @@ void drawPage()
       displayedPageSwitchFlag = true;
       displayedPage++;
 
-      if (displayedPage >= 2)
+      if (displayedPage >= 3)
         displayedPage = 0;
     }
   }
@@ -473,6 +481,12 @@ void drawPage()
     decimals = 1;
     break;
   case 1:
+    value = calculateBatteryLevel(returnData.sensorVoltage / remoteSettings.batteryCells, remoteSettings.batteryType) * remoteSettings.batteryRange / 100;
+    suffix = "KM";
+    prefix = F("DISTANCE");
+    decimals = 1;
+    break;
+  case 2:
     value = constrain(throttle * 100, 0.0, 99.9);
     suffix = "%";
     prefix = F("OUTPUT");
@@ -486,15 +500,12 @@ void drawPage()
   u8g2.setFont(u8g2_font_profont12_tr);
   u8g2.drawStr(x, y - 1, displayBuffer);
 
-  // Split up the float value: a number, b decimals.
-  first = abs(floor(value));
-  last = value * pow(10, 3) - first * pow(10, 3);
+  String printedValue = String(value, decimals);
+  displayString = printedValue.substring(0, printedValue.indexOf('.'));
 
   // Add leading zero
-  if (first <= 9)
-    displayString = "0" + (String)first;
-  else
-    displayString = (String)first;
+  if (displayString.length() == 1)
+    displayString = String('0') + displayString;
 
   // Display numbers
   displayString.toCharArray(displayBuffer, 10);
@@ -502,8 +513,8 @@ void drawPage()
   u8g2.drawStr(x + 55, y + 13, displayBuffer);
 
   // Display decimals
-  displayString = "." + (String)last;
-  displayString.toCharArray(displayBuffer, decimals + 2);
+  displayString = printedValue.substring(printedValue.indexOf('.'));
+  displayString.toCharArray(displayBuffer, 10);
   u8g2.setFont(u8g2_font_profont12_tr);
   u8g2.drawStr(x + 86, y - 1, displayBuffer);
 
@@ -526,6 +537,7 @@ void drawPage()
   switch (displayedPage)
   {
   case 0:
+  case 1:
   {
     //draw telemetry battery level
     int width = mapfloat(calculateBatteryLevel(returnData.sensorVoltage / remoteSettings.batteryCells, remoteSettings.batteryType), 0, 100, 0, 49);
@@ -534,7 +546,7 @@ void drawPage()
       u8g2.drawVLine(x + i + 2, y + 2, 7);
   }
     break;
-  case 1:
+  case 2:
   // Draw throttle
   {
     if (throttle >= 0.5)
