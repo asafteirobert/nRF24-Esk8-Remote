@@ -50,3 +50,13 @@ Battery: Shows the voltage of the battery connected to the receiver sensor. The 
 Distance: Shows the remaining range of the battery. This is just a convenience calculation, simply calculated by multiplying your battery level with the battery range from the settings.
 
 Output: Shows the signal sent to the receiver. Recommended to be left on when first using the remote to understand how acceleration, endpoints and cruise control work.
+
+### Links
+More details:
+https://www.electric-skateboard.builders/t/twinsens-3d-printed-nrf-remote/50482
+Schematics:
+https://easyeda.com/Twinsen/NRF_Remote
+Parts list:
+https://docs.google.com/spreadsheets/d/1Ayte5Xm0up_AQHfdTZghDGnGC5o7WZZo4H4hzZ2LCAw/edit?usp=sharing
+3D files:
+https://www.thingiverse.com/thing:2843488
