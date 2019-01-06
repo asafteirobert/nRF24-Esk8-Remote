@@ -1,8 +1,8 @@
 #include "Constants.h"
 #include "RemoteSettings.h"
 #include <U8g2lib.h>
-#include <Wire.h>
-#include <SPI.h>
+//#include <Wire.h>
+//#include <SPI.h>
 #include "RF24.h"
 //#include "VescUart.h"
 
@@ -148,13 +148,13 @@ void controlSettingsMenu()
   if (hallMeasurement >= (remoteSettings.maxHallValue - 150) && settingsLoopFlag == false)
   {
     // Up
-    remoteSettings.increaseSetting(currentSetting);
+    remoteSettings.increaseDecreaseSetting(currentSetting, 1);
     settingsLoopFlag = true;
   }
   else if (hallMeasurement <= (remoteSettings.minHallValue + 150) && settingsLoopFlag == false)
   {
     // Down
-    remoteSettings.decreaseSetting(currentSetting);
+    remoteSettings.increaseDecreaseSetting(currentSetting, -1);
     settingsLoopFlag = true;
   }
   else if (isCruiseControlButtonActive())
@@ -294,14 +294,15 @@ void calculateThrottlePosition()
     total += analogRead(PIN_HALL_SENSOR);
   }
   hallMeasurement = (float)total / 10;
+  hallMeasurement = constrain(hallMeasurement, remoteSettings.minHallValue, remoteSettings.maxHallValue);
 
   float desiredThrottleFromSensor;
   float initialThrottle = throttle;
 
   if (hallMeasurement >= remoteSettings.centerHallValue)
-    desiredThrottleFromSensor = ((constrain(mapfloat(hallMeasurement, remoteSettings.centerHallValue, remoteSettings.maxHallValue, 0.5, 1), 0.5, 1) - 0.5) * remoteSettings.throttleEndpoint / 100) + 0.5;
+    desiredThrottleFromSensor = ((mapfloat(hallMeasurement, remoteSettings.centerHallValue, remoteSettings.maxHallValue, 0.5, 1) - 0.5) * remoteSettings.throttleEndpoint / 100) + 0.5;
   else
-    desiredThrottleFromSensor = 0.5 - ((0.5 - constrain(mapfloat(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 0.5), 0, 0.5)) * remoteSettings.brakeEndpoint / 100);
+    desiredThrottleFromSensor = 0.5 - ((0.5 - mapfloat(hallMeasurement, remoteSettings.minHallValue, remoteSettings.centerHallValue, 0, 0.5)) * remoteSettings.brakeEndpoint / 100);
 
   // removing center noise
   if (abs(desiredThrottleFromSensor - 0.5) <= remoteSettings.throttleDeadzone / 100 / 2)
@@ -433,7 +434,7 @@ void drawStartScreen()
   u8g2.drawStr(34, 22, displayBuffer);
 
   u8g2.sendBuffer();
-  delay(1500);
+  delay(500);
 }
 
 void drawTitleScreen(String title)
@@ -638,21 +639,21 @@ float calculateBatteryLevel(float volatge, byte type)
   type = type + 1; //index 1 for lipo, index 2 for liion
 
   // volatge is less than the minimum
-  if (volatge < pgm_read_float(&(BATTERY_LEVEL_TABLE[0][0])))
-    return pgm_read_float(&(BATTERY_LEVEL_TABLE[0][type]));
+  if (volatge < pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[0])))
+    return pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][0]));
 
   //voltage more than maximum
-  if (volatge > pgm_read_float(&(BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT - 1][0])))
-    return pgm_read_float(&(BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT - 1][type]));
+  if (volatge > pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[BATTERY_LEVEL_TABLE_COUNT - 1])))
+    return pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][BATTERY_LEVEL_TABLE_COUNT - 1]));
 
-  // find i, such that BATTERY_LEVEL_TABLE[i][0] <= volatge < BATTERY_LEVEL_TABLE[i+1][0]
+  // find i, such that BATTERY_LEVEL_VOLTAGE[i] <= volatge < BATTERY_LEVEL_VOLTAGE[i+1]
   for (i = 0; i < BATTERY_LEVEL_TABLE_COUNT - 1; i++)
-    if (pgm_read_float(&(BATTERY_LEVEL_TABLE[i + 1][0])) > volatge)
+    if (pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i + 1])) > volatge)
       break;
 
   //interpolate
-  return pgm_read_float(&(BATTERY_LEVEL_TABLE[i][type])) +
-    (volatge - pgm_read_float(&(BATTERY_LEVEL_TABLE[i][0]))) *
-    (pgm_read_float(&(BATTERY_LEVEL_TABLE[i + 1][type])) - pgm_read_float(&(BATTERY_LEVEL_TABLE[i][type]))) /
-    (pgm_read_float(&(BATTERY_LEVEL_TABLE[i + 1][0])) - pgm_read_float(&(BATTERY_LEVEL_TABLE[i][0])));
+  return pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][i])) +
+    (volatge - pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i]))) *
+    (pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][i + 1])) - pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][i]))) /
+    (pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i + 1])) - pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i])));
 }

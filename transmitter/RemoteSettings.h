@@ -16,17 +16,15 @@ public:
   int getSettingValue(int index);
   // Set a value of a specific setting by index.
   void setSettingValue(int index, int value);
-  void increaseSetting(int index);
+  void increaseDecreaseSetting(int index, int8_t direction);
   String getSettingString(int index);
   String getSettingStringUnit(int index);
   String getSettingValueString(int index);
-  void decreaseSetting(int index);
 
   bool isThrottleHallSetting(int index);
 
   // Check if a setting is within a min and max value
   bool inRange(int val, byte settingIndex);
-
 
 public:
 

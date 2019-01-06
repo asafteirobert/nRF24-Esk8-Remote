@@ -91,7 +91,7 @@ void RemoteSettings::setSettingValue(int index, int value)
   }
 }
 
-void RemoteSettings::increaseSetting(int index)
+void RemoteSettings::increaseDecreaseSetting(int index, int8_t direction)
 {
   switch (index)
   {
@@ -102,7 +102,7 @@ void RemoteSettings::increaseSetting(int index)
   case 2:
   case 3:
   {
-    int val = this->getSettingValue(index) + 1;
+    int val = this->getSettingValue(index) + 1 * direction;
     this->setSettingValue(index, val);
     break;
   }
@@ -110,7 +110,7 @@ void RemoteSettings::increaseSetting(int index)
   case 5:
   case 6:
   {
-    int val = this->getSettingValue(index) + 10;
+    int val = this->getSettingValue(index) + 10 * direction;
     this->setSettingValue(index, val);
     break;
   }
@@ -118,115 +118,44 @@ void RemoteSettings::increaseSetting(int index)
   case 7:
   case 8:
   {
-    int val = this->getSettingValue(index) + 1;
+    int val = this->getSettingValue(index) + 1 * direction;
     this->setSettingValue(index, val);
     break;
   }
 
   case 9:
   {
-    float val = this->brakeAccelerationTime + 0.1;
+    float val = this->brakeAccelerationTime + 0.1 * direction;
     this->brakeAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
     break;
   }
   case 10:
   {
-    float val = this->throttleAccelerationTime + 0.1;
+    float val = this->throttleAccelerationTime + 0.1 * direction;
     this->throttleAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
     break;
   }
   case 11:
   {
-    float val = this->cruiseAccelerationTime + 0.1;
+    float val = this->cruiseAccelerationTime + 0.1 * direction;
     this->cruiseAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
     break;
   }
   case 12:
   {
-    float val = this->telemetryVoltageMultiplier + 0.01;
+    float val = this->telemetryVoltageMultiplier + 0.01 * direction;
     this->telemetryVoltageMultiplier = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
     break;
   }
   case 13:
   {
-    float val = this->remoteVoltageMultiplier + 0.01;
+    float val = this->remoteVoltageMultiplier + 0.01 * direction;
     this->remoteVoltageMultiplier = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
     break;
   }
   case 14:
   {
-    float val = this->batteryRange + 0.5;
-    this->batteryRange = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
-    break;
-  }
-  }
-}
-
-void RemoteSettings::decreaseSetting(int index)
-{
-  switch (index)
-  {
-  case 0:
-    this->rotateDisplay = !this->rotateDisplay;
-    break;
-  case 1:
-  case 2:
-  case 3:
-  {
-    int val = this->getSettingValue(index) - 1;
-    this->setSettingValue(index, val);
-    break;
-  }
-  case 4:
-  case 5:
-  case 6:
-  {
-    int val = this->getSettingValue(index) - 10;
-    this->setSettingValue(index, val);
-    break;
-  }
-
-  case 7:
-  case 8:
-  {
-    int val = this->getSettingValue(index) - 1;
-    this->setSettingValue(index, val);
-    break;
-  }
-
-  case 9:
-  {
-    float val = this->brakeAccelerationTime - 0.1;
-    this->brakeAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
-    break;
-  }
-  case 10:
-  {
-    float val = this->throttleAccelerationTime - 0.1;
-    this->throttleAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
-    break;
-  }
-  case 11:
-  {
-    float val = this->cruiseAccelerationTime - 0.1;
-    this->cruiseAccelerationTime = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
-    break;
-  }
-  case 12:
-  {
-    float val = this->telemetryVoltageMultiplier - 0.01;
-    this->telemetryVoltageMultiplier = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
-    break;
-  }
-  case 13:
-  {
-    float val = this->remoteVoltageMultiplier - 0.01;
-    this->remoteVoltageMultiplier = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
-    break;
-  }
-  case 14:
-  {
-    float val = this->batteryRange - 0.5;
+    float val = this->batteryRange + 0.5 * direction;
     this->batteryRange = constrain(val, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
     break;
   }

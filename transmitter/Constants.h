@@ -45,35 +45,13 @@ const byte REMOTE_BATTERY_TYPE = 1; //0 Lipo, 1 Li-ion
 
 //Typical cell voltage to percentage table for lipo and liion
 const byte BATTERY_LEVEL_TABLE_COUNT = 23;
-const static float BATTERY_LEVEL_TABLE[BATTERY_LEVEL_TABLE_COUNT][3] PROGMEM =
-{
-{ 3.1, 0, 0 },
-{ 3.15, 0, 0 },
-{ 3.2, 0, 0 },
-{ 3.25, 0, 0 },
-{ 3.3, 0, 1 },
-{ 3.35, 0, 2 },
-{ 3.4, 1, 3 },
-{ 3.45, 2, 4 },
-{ 3.5, 3, 6 },
-{ 3.55, 4, 8 },
-{ 3.6, 6, 13 },
-{ 3.65, 9, 21 },
-{ 3.7, 13, 33 },
-{ 3.75, 23, 49 },
-{ 3.8, 33, 59 },
-{ 3.85, 48, 68 },
-{ 3.9, 59, 75 },
-{ 3.95, 69, 83 },
-{ 4, 77, 88 },
-{ 4.05, 84, 95 },
-{ 4.1, 90, 98 },
-{ 4.15, 96, 99 },
-{ 4.2, 100, 100 }
-};
+const static float BATTERY_LEVEL_VOLTAGE[BATTERY_LEVEL_TABLE_COUNT] PROGMEM =    { 3.1, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.7, 3.75, 3.8, 3.85, 3.9, 3.95, 4,  4.05, 4.1, 4.15, 4.2 };
+const static byte BATTERY_LEVEL_PERCENT[2][BATTERY_LEVEL_TABLE_COUNT] PROGMEM = {{ 0,   0,    0,   0,    0,   0,    1,   2,    3,   4,    6,   9,    13,  23,   33,  48,   59,  69,   77, 84,   90,  96,   100 },
+                                                                                 { 0,   0,    0,   0,    1,   2,    3,   4,    6,   8,    13,  21,   33,  49,   59,  68,   75,  83,   88, 95,   98,  99,   100 }};
+
 
 // ======= Icons =======
-const static unsigned char ICON_LOGO[] PROGMEM =
+const static uint8_t ICON_LOGO[] PROGMEM =
 {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x80, 0x3c, 0x01,
   0xe0, 0x00, 0x07, 0x70, 0x18, 0x0e, 0x30, 0x18, 0x0c, 0x98, 0x99, 0x19,
@@ -83,19 +61,19 @@ const static unsigned char ICON_LOGO[] PROGMEM =
   0x80, 0x3c, 0x01, 0x00, 0x7e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-const static unsigned char ICON_SIGNAL_TRANSMITTING[] PROGMEM =
+const static uint8_t ICON_SIGNAL_TRANSMITTING[] PROGMEM =
 {
   0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x0f,
   0x33, 0x0f, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
 };
 
-const static unsigned char ICON_SIGNAL_CONNECTED[] PROGMEM =
+const static uint8_t ICON_SIGNAL_CONNECTED[] PROGMEM =
 {
   0x18, 0x00, 0x0c, 0x00, 0xc6, 0x00, 0x66, 0x00, 0x23, 0x06, 0x33, 0x09,
   0x33, 0x09, 0x23, 0x06, 0x66, 0x00, 0xc6, 0x00, 0x0c, 0x00, 0x18, 0x00
 };
 
-const static unsigned char ICON_SIGNAL_NOCONNECTION[] PROGMEM =
+const static uint8_t ICON_SIGNAL_NOCONNECTION[] PROGMEM =
 {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x09,
   0x00, 0x09, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
