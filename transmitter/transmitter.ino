@@ -19,12 +19,17 @@
 U8G2_SSD1306_128X32_UNIVISION_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
 //Telemetry data returned from the receiver
-struct returnDataType
+struct ReturnDataType
 {
   float sensorVoltage = 0;
 };
+struct BindDataType
+{
+  uint8_t radioChannel;
+  uint8_t uniquePipe[5];
+};
 
-struct returnDataType returnData;
+struct ReturnDataType returnData;
 
 struct RemoteSettings remoteSettings;
 
@@ -34,6 +39,7 @@ float throttle = 0.5;
 unsigned long lastThrottleMeasurement = 0;
 
 // NRF24 communication
+bool binding = true;
 bool connected = false;
 short failCount;
 unsigned long lastTransmission;
@@ -80,6 +86,7 @@ void setup()
   pinMode(PIN_CRUISE_CONTROL, INPUT_PULLUP);
   pinMode(PIN_HALL_SENSOR, INPUT);
   pinMode(PIN_BATTERY_MEASURE, INPUT);
+  pinMode(PIN_RANDOM_SEED, INPUT);
 
   u8g2.begin();
 
@@ -93,11 +100,12 @@ void setup()
 
   // Start radio communication
   radio.begin();
+  radio.setChannel(BINDING_CHANNEL);
   radio.setPALevel(RF24_PA_MAX);
   radio.setDataRate(RF24_250KBPS);
   radio.enableAckPayload();
   radio.enableDynamicPayloads();
-  radio.openWritingPipe(NRF_PIPE);
+  radio.openWritingPipe(BINDING_PIPE);
 
 #ifdef DEBUG
   printf_begin();
@@ -113,6 +121,10 @@ void loop()
   {
     // Use throttle and trigger to change settings
     controlSettingsMenu();
+  }
+  else if (binding == true)
+  {
+    transmitBindingData();
   }
   else
   {
@@ -145,7 +157,22 @@ void controlSettingsMenu()
     settingsChangeFlag = false;
   }
 
-  if (hallMeasurement >= (remoteSettings.maxHallValue - 150) && settingsLoopFlag == false)
+  DEBUG_PRINT("isCruiseControlButtonActive");
+  if (isCruiseControlButtonActive())
+  {
+    DEBUG_PRINT("yes" + String(hallMeasurement));
+    if (remoteSettings.isThrottleHallSetting(currentSetting))
+      remoteSettings.setSettingValue(currentSetting, hallMeasurement);
+    if (currentSetting == SETTINGS_COUNT - 1)
+    {
+      remoteSettings.resetToDefault();
+      remoteSettings.saveToEEPROM();
+      currentSetting = 0;
+    }
+
+    settingsLoopFlag = true;
+  }
+  else if (hallMeasurement >= (remoteSettings.maxHallValue - 150) && settingsLoopFlag == false)
   {
     // Up
     remoteSettings.increaseDecreaseSetting(currentSetting, 1);
@@ -155,19 +182,6 @@ void controlSettingsMenu()
   {
     // Down
     remoteSettings.increaseDecreaseSetting(currentSetting, -1);
-    settingsLoopFlag = true;
-  }
-  else if (isCruiseControlButtonActive())
-  {
-    if (remoteSettings.isThrottleHallSetting(currentSetting))
-      remoteSettings.setSettingValue(currentSetting, hallMeasurement);
-    if (currentSetting == SETTINGS_COUNT - 1 && settingsLoopFlag == false)
-    {
-      remoteSettings.resetToDefault();
-      remoteSettings.saveToEEPROM();
-      currentSetting = 0;
-    }
-
     settingsLoopFlag = true;
   }
   else if ((remoteSettings.centerHallValue - 50 <= hallMeasurement) && (hallMeasurement <= remoteSettings.centerHallValue + 50))
@@ -239,6 +253,57 @@ bool isCruiseControlButtonActive()
   return digitalRead(PIN_CRUISE_CONTROL) == LOW;
 }
 
+void transmitBindingData()
+{
+  // Transmit once every 30 milliseconds
+  if (millis() - lastTransmission >= 30)
+  {
+    lastTransmission = millis();
+
+    bool sendSuccess = false;
+    bool bindAck = false;
+    BindDataType bindingData;
+    for (uint8_t i = 0; i < sizeof(remoteSettings.uniquePipe) / sizeof(uint8_t); i++)
+      bindingData.uniquePipe[i] = remoteSettings.uniquePipe[i];
+    bindingData.radioChannel = remoteSettings.radioChannel;
+    sendSuccess = radio.write(&bindingData, sizeof(bindingData));
+
+    while (radio.isAckPayloadAvailable())
+    {
+      uint8_t len = radio.getDynamicPayloadSize();
+      DEBUG_PRINT("Got payload len:" + String(len));
+      if (len == sizeof(bindAck))
+        radio.read(&bindAck, sizeof(bindAck));
+      else
+      {
+        radio.flush_rx();
+        delay(2);
+        DEBUG_PRINT("Discarded bad packet <<<");
+      }
+    }
+
+    if (sendSuccess == true)
+    {
+      DEBUG_PRINT(F("BIND Transmission success"));
+    }
+    else
+    {
+      DEBUG_PRINT(F("BIND Failed transmission"));
+    }
+
+    if (sendSuccess == true && bindAck == true)
+    {
+      binding = false;
+      radio.setChannel(remoteSettings.radioChannel);
+      radio.openWritingPipe(remoteSettings.uniquePipe);
+      radio.flush_rx();
+      delay(2);
+
+      DEBUG_PRINT(F("Binding Complete"));
+    }
+  }
+}
+
 // Function used to transmit the throttle value, and receive the telemetry data.
 void transmitThrottle()
 {
@@ -247,7 +312,7 @@ void transmitThrottle()
   {
     lastTransmission = millis();
 
-    boolean sendSuccess = false;
+    bool sendSuccess = false;
     // Transmit the speed value (0-255).
     sendSuccess = radio.write(&throttle, sizeof(throttle));
 
@@ -294,7 +359,8 @@ void calculateThrottlePosition()
     total += analogRead(PIN_HALL_SENSOR);
   }
   hallMeasurement = (float)total / 10;
-  hallMeasurement = constrain(hallMeasurement, remoteSettings.minHallValue, remoteSettings.maxHallValue);
+  if (changeSettings == false)
+    hallMeasurement = constrain(hallMeasurement, remoteSettings.minHallValue, remoteSettings.maxHallValue);
 
   float desiredThrottleFromSensor;
   float initialThrottle = throttle;
@@ -430,7 +496,7 @@ void drawStartScreen()
 
   String displayString = F("Esk8 remote");
   displayString.toCharArray(displayBuffer, 12);
-  u8g2.setFont(u8g2_font_helvR10_tr);
+  u8g2.setFont(u8g2_font_profont12_tr);
   u8g2.drawStr(34, 22, displayBuffer);
 
   u8g2.sendBuffer();
@@ -442,7 +508,7 @@ void drawTitleScreen(String title)
   u8g2.clearBuffer();
 
   title.toCharArray(displayBuffer, 20);
-  u8g2.setFont(u8g2_font_helvR10_tr);
+  u8g2.setFont(u8g2_font_profont12_tr);
   u8g2.drawStr(12, 20, displayBuffer);
 
   u8g2.sendBuffer();
@@ -640,11 +706,11 @@ float calculateBatteryLevel(float volatge, byte type)
 
   // volatge is less than the minimum
   if (volatge < pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[0])))
-    return pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][0]));
+    return pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][0]));
 
   //voltage more than maximum
   if (volatge > pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[BATTERY_LEVEL_TABLE_COUNT - 1])))
-    return pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][BATTERY_LEVEL_TABLE_COUNT - 1]));
+    return pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][BATTERY_LEVEL_TABLE_COUNT - 1]));
 
   // find i, such that BATTERY_LEVEL_VOLTAGE[i] <= volatge < BATTERY_LEVEL_VOLTAGE[i+1]
   for (i = 0; i < BATTERY_LEVEL_TABLE_COUNT - 1; i++)
@@ -652,8 +718,8 @@ float calculateBatteryLevel(float volatge, byte type)
       break;
 
   //interpolate
-  return pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][i])) +
+  return pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][i])) +
     (volatge - pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i]))) *
-    (pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][i + 1])) - pgm_read_float(&(BATTERY_LEVEL_PERCENT[type][i]))) /
+    (pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][i + 1])) - pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][i]))) /
     (pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i + 1])) - pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i])));
 }

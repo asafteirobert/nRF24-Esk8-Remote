@@ -6,6 +6,9 @@ void RemoteSettings::resetToDefault()
 {
   for (int i = 0; i < SETTINGS_COUNT; i++)
     this->setSettingValue(i, SETTINGS_RULES[i][0]);
+
+  this->regenerateUniquePipe();
+
   this->saveToEEPROM();
 }
 
@@ -65,6 +68,7 @@ int RemoteSettings::getSettingValue(int index)
   case 12: value = this->telemetryVoltageMultiplier; break;
   case 13: value = this->remoteVoltageMultiplier;    break;
   case 14: value = this->batteryRange;               break;
+  case 15: value = this->radioChannel;               break;
   }
   return value;
 }
@@ -88,6 +92,8 @@ void RemoteSettings::setSettingValue(int index, int value)
   case 12: this->telemetryVoltageMultiplier = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]); break;
   case 13: this->remoteVoltageMultiplier = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);    break;
   case 14: this->batteryRange = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);               break;
+  case 15: this->radioChannel = constrain(value, SETTINGS_RULES[index][1], SETTINGS_RULES[index][2]);
+    this->regenerateUniquePipe(); break;
   }
 }
 
@@ -101,6 +107,9 @@ void RemoteSettings::increaseDecreaseSetting(int index, int8_t direction)
   case 1:
   case 2:
   case 3:
+  case 7:
+  case 8:
+  case 15:
   {
     int val = this->getSettingValue(index) + 1 * direction;
     this->setSettingValue(index, val);
@@ -114,15 +123,6 @@ void RemoteSettings::increaseDecreaseSetting(int index, int8_t direction)
     this->setSettingValue(index, val);
     break;
   }
-
-  case 7:
-  case 8:
-  {
-    int val = this->getSettingValue(index) + 1 * direction;
-    this->setSettingValue(index, val);
-    break;
-  }
-
   case 9:
   {
     float val = this->brakeAccelerationTime + 0.1 * direction;
@@ -181,7 +181,8 @@ String RemoteSettings::getSettingString(int index)
   case 12: return String(F("Voltage cal sen"));
   case 13: return String(F("Voltage cal rem"));
   case 14: return String(F("Batery range"));
-  case 15: return String(F("RESET ALL"));
+  case 15: return String(F("Radio Channel"));
+  case 16: return String(F("RESET ALL"));
   }
 }
 
@@ -189,22 +190,28 @@ String RemoteSettings::getSettingStringUnit(int index)
 {
   switch (index)
   {
-  case 0: return String();
-  case 1: return String();
-  case 2: return String(F("S"));
-  case 3: return String(F("%"));
-  case 4: return String();
-  case 5: return String();
-  case 6: return String();
-  case 7: return String(F("%"));
-  case 8: return String(F("%"));
-  case 9: return String(F(" sec"));
-  case 10: return String(F(" sec"));
-  case 11: return String(F(" sec"));
-  case 12: return String();
-  case 13: return String();
-  case 14: return String(F(" KM"));
-  case 15: return String();
+  case 0: 
+  case 1:
+  case 4:
+  case 5:
+  case 6:
+  case 12:
+  case 13:
+  case 15:
+  case 16:
+    return String();
+  case 2:
+    return String(F("S"));
+  case 3:
+  case 7:
+  case 8:
+    return String(F("%"));
+  case 9: 
+  case 10:
+  case 11:
+    return String(F(" sec"));
+  case 14:
+    return String(F(" KM"));
   }
 }
 
@@ -228,7 +235,8 @@ String RemoteSettings::getSettingValueString(int index)
   case 12: return String(this->telemetryVoltageMultiplier);
   case 13: return String(this->remoteVoltageMultiplier);
   case 14: return String(this->batteryRange);
-  case 15: return String(F("Confirm"));
+  case 15: return String(this->radioChannel);
+  case 16: return String(F("Confirm"));
   }
   return String(F("Unknown"));
 }
@@ -247,6 +255,18 @@ bool RemoteSettings::isThrottleHallSetting(int index)
   }
 
   return false;
+}
+
+void RemoteSettings::regenerateUniquePipe()
+{
+  //generate a unique pipe to be used as our binding code
+  for (uint8_t i = 1; i<sizeof(BINDING_PIPE) / sizeof(uint8_t); i++)
+    this->uniquePipe[i] = BINDING_PIPE[i];
+  randomSeed(analogRead(PIN_RANDOM_SEED) * analogRead(PIN_BATTERY_MEASURE) * analogRead(PIN_RANDOM_SEED) * micros());
+  do
+  {
+    this->uniquePipe[0] = random(0, 255);
+  } while (this->uniquePipe[0] == BINDING_PIPE[0]);
 }
 
 bool RemoteSettings::inRange(int val, byte settingIndex)

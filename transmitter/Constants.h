@@ -3,8 +3,8 @@
 #include "arduino.h"
 
 // ======= Settings =======
-const byte SETTINGS_COUNT = 16;
-const long SETTINGS_VERSION_CHECK = 149778292; //change to rewrite settings
+const byte SETTINGS_COUNT = 17;
+const long SETTINGS_VERSION_CHECK = 149778293; //change to rewrite settings
 
 const int SETTINGS_RULES[SETTINGS_COUNT][3] =
 {
@@ -24,6 +24,7 @@ const int SETTINGS_RULES[SETTINGS_COUNT][3] =
 { 1, 0, 2 },
 { 1, 0, 2 },
 { 10, 0, 99 },
+{ 108, 0, 125 },
 { 0, 0, 0 },
 };
 
@@ -33,10 +34,12 @@ const uint8_t PIN_PAGE_SWITCH = 5;
 const uint8_t PIN_CRUISE_CONTROL = 6;
 const uint8_t PIN_BATTERY_MEASURE = A2;
 const uint8_t PIN_HALL_SENSOR = A3;
+const uint8_t PIN_RANDOM_SEED = A0; //unconnected pin to give us some random noise
 const uint8_t PIN_NRF_CE = 9;
 const uint8_t PIN_NRF_CS = 10;
 
-const uint64_t NRF_PIPE = 0xE8E8F0F0E1LL;
+const static uint8_t BINDING_PIPE[5] = { 0xE8,0xE8,0xF0,0xF0,0xE8 };
+const static uint8_t BINDING_CHANNEL = 76;
 
 // ======= Battery monitoring =======
 const float REMOTE_BATTERY_SENSOR_REF_VOLTAGE = 1.089;

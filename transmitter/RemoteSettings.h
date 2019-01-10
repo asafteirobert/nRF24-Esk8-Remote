@@ -22,6 +22,7 @@ public:
   String getSettingValueString(int index);
 
   bool isThrottleHallSetting(int index);
+  void regenerateUniquePipe();
 
   // Check if a setting is within a min and max value
   bool inRange(int val, byte settingIndex);
@@ -45,7 +46,10 @@ public:
   float telemetryVoltageMultiplier;
   float remoteVoltageMultiplier;
   float batteryRange;
+  uint8_t radioChannel;
   //use VESC
+
+  uint8_t uniquePipe[5];
 };
 #endif
 
