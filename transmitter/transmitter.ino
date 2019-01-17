@@ -701,8 +701,6 @@ float mapfloat(float x, float in_min, float in_max, float out_min, float out_max
 float calculateBatteryLevel(float volatge, byte type)
 {
   int i;
-  float dx, dy;
-  type = type + 1; //index 1 for lipo, index 2 for liion
 
   // volatge is less than the minimum
   if (volatge < pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[0])))
@@ -718,8 +716,8 @@ float calculateBatteryLevel(float volatge, byte type)
       break;
 
   //interpolate
-  return pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][i])) +
+  return float(pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][i]))) +
     (volatge - pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i]))) *
-    (pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][i + 1])) - pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][i]))) /
+    (float(pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][i + 1]))) - float(pgm_read_byte(&(BATTERY_LEVEL_PERCENT[type][i])))) /
     (pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i + 1])) - pgm_read_float(&(BATTERY_LEVEL_VOLTAGE[i])));
 }
