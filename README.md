@@ -60,7 +60,8 @@ More details:
 https://www.electric-skateboard.builders/t/twinsens-3d-printed-nrf-remote/50482
 
 Schematics:
-https://easyeda.com/Twinsen/NRF_Remote
+Transmitter: https://easyeda.com/Twinsen/nrf-remote-2
+Receiver: https://easyeda.com/Twinsen/NRF-Remote-2-receiver
 
 Parts list:
 https://docs.google.com/spreadsheets/d/1Ayte5Xm0up_AQHfdTZghDGnGC5o7WZZo4H4hzZ2LCAw/edit?usp=sharing
