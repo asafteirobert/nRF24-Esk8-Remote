@@ -31,8 +31,8 @@ const static uint8_t BINDING_CHANNEL = 76;
 const int CONNECTION_TIMEOUT = 500;
 //after this timeout look for binding code again
 const int REBIND_TIMEOUT = 2500;
-const int PIN_OUTPUT1 = 5;
-const int PIN_OUTPUT2 = 6;
+const int PIN_OUTPUT1 = 2;
+const int PIN_OUTPUT2 = 3;
 const int PIN_VOLTAGE_SENSOR = A1;
 const float SENSOR_REF_VOLTAGE = 1.089; //Slightly lower than the expected 1v1 
 const float SENSOR_VOLTAGE_MULTIPLIER = 48; //Voltage divider R1=47k, R2=1K
