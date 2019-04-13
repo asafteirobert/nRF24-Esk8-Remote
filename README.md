@@ -34,6 +34,7 @@ Cruise accel. | 1sec | 0-5sec | Cruise control acceleration time: The number of 
 Voltage cal. sen. | 1 | 0-2 | Voltage calibration multiplier for the receiver sensor: Multiplies the voltage of the receiver sensor with this value, to calibrate it.
 Voltage cal. rem. | 1 | 0-2 | Voltage calibration multiplier for the remote battery: Multiplies the voltage of the remote battery sensor with this value, to calibrate it.
 Batery range | 10KM | 0-99KM | The typical range you get on a battery, used to calculate the remaining range on the "DISTANCE" page.
+Radio Channel | 108 | 0-125 | The radio frequency used for communication. Change to avoid interference when using multiple remotes nearby.
 RESET ALL | | | Press the Cruise control button to reset all settings to default
 
 
@@ -50,6 +51,9 @@ Battery: Shows the voltage of the battery connected to the receiver sensor. The 
 Distance: Shows the remaining range of the battery. This is just a convenience calculation, simply calculated by multiplying your battery level with the battery range from the settings.
 
 Output: Shows the signal sent to the receiver. Recommended to be left on when first using the remote to understand how acceleration, endpoints and cruise control work.
+
+### How binding works
+To avoid conflicts with other remotes, the transmitter and receiver have to be binded. The remote implements autobinding, meaning the transmitter will automatically connect and bind to the first unconnected receiver it detects. The binding code is generated automatically when the remote is first started or when the radio channel setting is changed. To avoid further interference when using multiple remotes, you can use the radio channel setting to change the radio frequency used.
 
 ### Links
 More details:
